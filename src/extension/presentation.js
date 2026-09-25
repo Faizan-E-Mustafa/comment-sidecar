@@ -27,6 +27,16 @@ function markerDecorations(document, byLine, { showMarkers, markerStyle }) {
   return options;
 }
 
+function sidecarDecoration(uri) {
+  if (uri.scheme !== 'file' || !uri.fsPath.endsWith('.comment')) {
+    return undefined;
+  }
+
+  const decoration = new vscode.FileDecoration(undefined, 'Line Comments sidecar', new vscode.ThemeColor('lineComments.sidecarForeground'));
+  decoration.propagate = false;
+  return decoration;
+}
+
 function hoverHeader(line, count) {
   const markdown = new vscode.MarkdownString();
   markdown.isTrusted = false;
@@ -62,4 +72,4 @@ function diagnosticsFor(document, results) {
     return diagnostic;
   });
 }
-module.exports = { hoverHeader, commentMarkdown, diagnosticsFor, markerText, markerDecorations };
+module.exports = { sidecarDecoration, hoverHeader, commentMarkdown, diagnosticsFor, markerText, markerDecorations };

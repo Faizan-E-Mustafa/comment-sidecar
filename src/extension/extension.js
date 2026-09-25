@@ -3,7 +3,7 @@ const vscode = require('vscode');
 const path = require('node:path');
 const { Store } = require('./store');
 const { DraftProvider } = require('./drafts');
-const { hoverHeader, commentMarkdown, diagnosticsFor, markerDecorations } = require('./presentation');
+const { sidecarDecoration, hoverHeader, commentMarkdown, diagnosticsFor, markerDecorations } = require('./presentation');
 const { createHighlights } = require('./highlights');
 const { readSettings } = require('./settings');
 const { render } = require('../core/render');
@@ -124,6 +124,7 @@ function activate(context) {
       }
     }),
     vscode.workspace.registerFileSystemProvider('line-comment-draft', drafts, { isCaseSensitive: true }),
+    vscode.window.registerFileDecorationProvider({ provideFileDecoration: sidecarDecoration }),
     vscode.workspace.registerTextDocumentContentProvider('line-comments-preview', {
       onDidChange: previewEvents.event,
       async provideTextDocumentContent(uri) {

@@ -40,7 +40,7 @@ function tools(allowWrite) {
   if (allowWrite) {
     definitions.push({
       name: 'line_comments_write',
-      description: 'Change an external comment sidecar, never source. Supply both revision hashes from a fresh read. add/reanchor require line and expectedText. review explicitly acknowledges a provisional comment. Do not invent rationale or erase constraints just to match code.',
+      description: 'Change an external comment sidecar, never source. Supply both revision hashes from a fresh read. add/reanchor require line and expectedText. review explicitly acknowledges a provisional comment. Write only non-obvious rules or reasons in one or two sentences, never what the line does. Do not invent rationale or erase constraints just to match code.',
       annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
       inputSchema: {
         type: 'object',

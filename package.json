@@ -143,6 +143,13 @@
         "when": "editorTextFocus && resourceScheme == file && isWorkspaceTrusted"
       }
     ],
+    "configurationDefaults": {
+      "explorer.fileNesting.enabled": true,
+      "explorer.fileNesting.expand": false,
+      "explorer.fileNesting.patterns": {
+        "*": "${capture}.comment"
+      }
+    },
     "configuration": {
       "title": "Line Comments",
       "properties": {
@@ -189,6 +196,16 @@
       }
     },
     "colors": [
+      {
+        "id": "lineComments.sidecarForeground",
+        "description": "Explorer and tab label color for .comment sidecar files.",
+        "defaults": {
+          "dark": "disabledForeground",
+          "light": "disabledForeground",
+          "highContrast": "disabledForeground",
+          "highContrastLight": "disabledForeground"
+        }
+      },
       {
         "id": "lineComments.highlightBackground",
         "description": "Background for lines with external comments. Use transparency.",

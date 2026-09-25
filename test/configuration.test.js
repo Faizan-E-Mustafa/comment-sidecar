@@ -63,3 +63,11 @@ test('MCP advertises the same package version as the extension and CLI', async (
   assert.equal(response.result.serverInfo.version, manifest.version);
   assert.equal(response.result.serverInfo.name, manifest.name);
 });
+
+test('sidecars nest collapsed under their source file by default', () => {
+  assert.deepEqual(manifest.contributes.configurationDefaults, {
+    'explorer.fileNesting.enabled': true,
+    'explorer.fileNesting.expand': false,
+    'explorer.fileNesting.patterns': { '*': '${capture}.comment' },
+  });
+});

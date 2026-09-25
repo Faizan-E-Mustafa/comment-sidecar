@@ -69,6 +69,30 @@ Needs-review annotations keep the circle and append `!`: `◌ comment !` or `◌
 
 The extension contributes one hover provider and no decoration hover. It does not suppress diagnostics or other extensions' hovers. Highlight colors use the `lineComments.highlightBackground`, `highlightBorder`, `reviewBackground`, and `reviewBorder` theme tokens. Defaults are declared once in `package.json` and read by `src/extension/settings.js`; CLI and MCP versions also come from `package.json`.
 
+## Hide or nest `.comment` files
+
+Sidecars are tucked under their source file in the Explorer by default (`app.tsx` → `app.tsx.comment`, collapsed). The extension does this by contributing default values, merged with VS Code's built-in nesting rules:
+
+```json
+{
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": { "*": "${capture}.comment" }
+}
+```
+
+These are VS Code-wide settings, so the built-in nests (for example `.js` under `.ts`, lockfiles under `package.json`) also appear, collapsed. Setting any of them yourself takes precedence; if you define your own `explorer.fileNesting.patterns`, include `"*": "${capture}.comment"` in it. Nested sidecars are also dimmed using the `lineComments.sidecarForeground` theme color (default: the theme's disabled foreground), which you can override in `workbench.colorCustomizations`.
+
+To hide sidecars from the Explorer and search entirely:
+
+```json
+{
+  "files.exclude": { "**/*.comment": true }
+}
+```
+
+Hover, markers, CLI and MCP keep working when sidecars are hidden. **Open .comment Patch** still opens a hidden file.
+
 ## Write and maintain comments
 
 Place the cursor on a saved source line and run **Line Comments: Add Comment at Line** (`Cmd+Alt+;` on macOS). A plain-text draft opens alongside the source. Write the comment and save: only the sibling `.comment` changes.
@@ -100,7 +124,7 @@ For another repository, pass `--root /absolute/path/to/repository` and a source 
 
 Writes require both hashes from a fresh read; `add`/`reanchor` also require the exact target line text. The CLI computes all sidecar metadata. Run `node src/cli.js --help` for write commands and `--text-file`.
 
-In the editor, **Line Comments: Copy Agent Instructions** copies rules to merge into one instruction file (AGENTS.md or a Cursor rule). **Line Comments: Copy Cursor MCP Configuration** copies a read-only or sidecar-write server entry for `.cursor/mcp.json`. The tools are `line_comments_read`, `line_comments_check`, and (with `--allow-write`) `line_comments_write`. A VS Code MCP example is in `integration/`. Copied configurations contain absolute paths to this installation; copy them again after moving or reinstalling.
+The instructions (`lc rules`, or `integration/AGENTS.snippet.md`) also tell the agent what to write: only non-obvious rules or reasons, one or two sentences, attached to the line that enforces them, never a description of what the line does. In the editor, **Line Comments: Copy Agent Instructions** copies rules to merge into one instruction file (AGENTS.md or a Cursor rule). **Line Comments: Copy Cursor MCP Configuration** copies a read-only or sidecar-write server entry for `.cursor/mcp.json`. The tools are `line_comments_read`, `line_comments_check`, and (with `--allow-write`) `line_comments_write`. A VS Code MCP example is in `integration/`. Copied configurations contain absolute paths to this installation; copy them again after moving or reinstalling.
 
 Neither route guarantees that an agent follows the instructions, and agent use does not imply inline-completion integration.
 

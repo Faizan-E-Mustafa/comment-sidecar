@@ -28,12 +28,13 @@ class Range {
 }
 class Selection extends Range { constructor(a, b) { super(a, b); this.active = b; this.isEmpty = a.line === b.line && a.character === b.character; } }
 class MarkdownString { constructor() { this.parts = []; } appendMarkdown(value) { this.parts.push({ type: 'markdown', value }); return this; } appendText(value) { this.parts.push({ type: 'text', value }); return this; } }
-const commands = new Map(), hoverProviders = [], fileProviders = new Map(), contentProviders = new Map(), events = {};
+const commands = new Map(), hoverProviders = [], fileProviders = new Map(), contentProviders = new Map(), fileDecorationProviders = [], events = {};
 const event = name => { const emitter = new EventEmitter(); events[name] = emitter; return emitter.event; };
 const vscode = {
   Disposable, EventEmitter, Uri, Position, Range, Selection, MarkdownString,
   ThemeColor: class { constructor(id) { this.id = id; } },
   Hover: class { constructor(contents, range) { this.contents = contents; this.range = range; } },
+  FileDecoration: class { constructor(badge, tooltip, color) { Object.assign(this, { badge, tooltip, color }); } },
   Diagnostic: class { constructor(range, message, severity) { Object.assign(this, { range, message, severity }); } },
   DecorationRangeBehavior: { ClosedClosed: 1 },
   DiagnosticSeverity: { Warning: 1 }, FileType: { File: 1 }, FileChangeType: { Changed: 1 }, StatusBarAlignment: { Right: 2 }, ViewColumn: { Beside: -2 },
@@ -69,6 +70,7 @@ const vscode = {
     createTextEditorDecorationType(options) { const item = new Disposable(); item.options = options; return item; },
     createStatusBarItem() { const item = { visible: false, hide() { this.visible = false; }, show() { this.visible = true; }, dispose() {} }; vscode.status = item; return item; },
     onDidChangeActiveTextEditor: event('active'), onDidChangeVisibleTextEditors: event('visible'),
+    registerFileDecorationProvider(provider) { fileDecorationProviders.push(provider); return new Disposable(() => fileDecorationProviders.splice(fileDecorationProviders.indexOf(provider), 1)); },
     showInformationMessage: async () => {}, showErrorMessage: async message => { vscode.lastError = message; },
     showWarningMessage: async () => 'Delete comment', showQuickPick: async options => options[0],
     async showTextDocument(document) { const editor = makeEditor(document); this.activeTextEditor = editor; this.visibleTextEditors.push(editor); return editor; },
@@ -509,4 +511,19 @@ test('hover names the annotated line so a card covering the line above is unambi
   const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
   assert.equal(hoverHeader(hover), '**Comment on line 2**');
   assert.equal(hoverText(hover), 'Wait for initialization.');
+});
+
+test('sidecar files are dimmed in the explorer without affecting sources or folders', async t => {
+  const { root } = await setup(t);
+  assert.equal(fileDecorationProviders.length, 1);
+  const provider = fileDecorationProviders[0];
+  const decoration = provider.provideFileDecoration(Uri.file(path.join(root, 'app.ts.comment')));
+  assert.equal(decoration.color.id, 'lineComments.sidecarForeground');
+  assert.equal(decoration.propagate, false);
+  assert.equal(provider.provideFileDecoration(Uri.file(path.join(root, 'app.ts'))), undefined);
+  assert.equal(provider.provideFileDecoration(Uri.parse('untitled:notes.comment')), undefined);
+});
+test('manifest contributes the sidecar color with a theme-aware default', () => {
+  const color = require('../package.json').contributes.colors.find(item => item.id === 'lineComments.sidecarForeground');
+  assert.deepEqual(color.defaults, { dark: 'disabledForeground', light: 'disabledForeground', highContrast: 'disabledForeground', highContrastLight: 'disabledForeground' });
 });
