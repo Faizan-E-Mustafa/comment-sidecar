@@ -4,14 +4,22 @@ const { createNote } = require('./note');
 const { contextHash } = require('./fingerprints');
 
 function resolveNotes(source, notes) {
-  if (!notes.length) return [];
-  const lines = linesOf(source), base = sourceHash(source);
+  if (!notes.length) {
+    return [];
+  }
+  const lines = linesOf(source);
+  const base = sourceHash(source);
   const lineHashes = new Map();
   let positionsByHash;
   function digestOf(text) {
-    if (text === undefined) return undefined;
+    if (text === undefined) {
+      return undefined;
+    }
     let digest = lineHashes.get(text);
-    if (!digest) { digest = hash(text); lineHashes.set(text, digest); }
+    if (!digest) {
+      digest = hash(text);
+      lineHashes.set(text, digest);
+    }
     return digest;
   }
   function candidatesFor(target) {
@@ -20,30 +28,55 @@ function resolveNotes(source, notes) {
       for (let i = 0; i < lines.length; i++) {
         const digest = digestOf(lines[i]);
         const positions = positionsByHash.get(digest);
-        if (positions) positions.push(i + 1);
-        else positionsByHash.set(digest, [i + 1]);
+        if (positions) {
+          positions.push(i + 1);
+        } else {
+          positionsByHash.set(digest, [i + 1]);
+        }
       }
     }
     return positionsByHash.get(target) || [];
   }
   return notes.map(note => {
     const anchor = note.anchor;
-    if (!anchor) throw new Error(`Comment ${note.id} has no anchor fingerprint.`);
+    if (!anchor) {
+      throw new Error(`Comment ${note.id} has no anchor fingerprint.`);
+    }
     const result = (line, status, reason) => ({ note, line, status, reason });
-    if (note.state === 'detached') return result(null, 'detached', 'Target was detached by an editor change; reattach explicitly.');
-    if (note.base === base && digestOf(lines[note.line - 1]) === anchor.target) return result(note.line, note.state, 'Source matches the recorded revision.');
+
+    if (note.state === 'detached') {
+      return result(null, 'detached', 'Target was detached by an editor change; reattach explicitly.');
+    }
+    if (note.base === base && digestOf(lines[note.line - 1]) === anchor.target) {
+      return result(note.line, note.state, 'Source matches the recorded revision.');
+    }
+
     const candidates = candidatesFor(anchor.target);
     const exact = candidates.filter(line => {
       const start = line - 1 - anchor.before;
-      if (start < 0 || line + anchor.after > lines.length) return false;
+      if (start < 0 || line + anchor.after > lines.length) {
+        return false;
+      }
       return contextHash(lines.slice(start, line + anchor.after)) === anchor.context;
     });
+
     if (exact.length === 1) {
-      const status = note.state === 'review' ? 'review' : exact[0] === note.line ? 'attached' : 'moved';
+      let status;
+      if (note.state === 'review') {
+        status = 'review';
+      } else if (exact[0] === note.line) {
+        status = 'attached';
+      } else {
+        status = 'moved';
+      }
       return result(exact[0], status, 'Target and recorded neighboring lines match uniquely; meaning is not verified.');
     }
-    if (exact.length > 1 || candidates.length > 1) return result(null, 'ambiguous', 'Multiple matching lines; choose the target explicitly.');
-    if (candidates.length === 1 && anchor.strong) return result(candidates[0], 'review', 'Only the target text matches; neighboring context changed. Verify this provisional attachment.');
+    if (exact.length > 1 || candidates.length > 1) {
+      return result(null, 'ambiguous', 'Multiple matching lines; choose the target explicitly.');
+    }
+    if (candidates.length === 1 && anchor.strong) {
+      return result(candidates[0], 'review', 'Only the target text matches; neighboring context changed. Verify this provisional attachment.');
+    }
     return result(null, 'detached', 'The original target cannot be located confidently.');
   });
 }
@@ -51,7 +84,9 @@ function resolveNotes(source, notes) {
 function rebaseNotes(source, results) {
   const base = sourceHash(source);
   return results.map(result => {
-    if (result.line === null) return result.note;
+    if (result.line === null) {
+      return result.note;
+    }
     return createNote(source, result.line, result.note.text, {
       id: result.note.id, base, state: result.status === 'review' ? 'review' : 'attached',
     });

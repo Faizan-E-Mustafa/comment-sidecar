@@ -18,16 +18,28 @@ function normalizeComment(text) {
   return text.replace(/\r\n/g, '\n');
 }
 function assertAnchor(anchor) {
-  if (!anchor || !HASH.test(anchor.target) || !HASH.test(anchor.context) || typeof anchor.strong !== 'boolean') throw new Error('Invalid anchor fingerprint.');
-  if (![anchor.before, anchor.after].every(n => Number.isInteger(n) && n >= 0 && n <= 2)) throw new Error('Invalid anchor context counts.');
+  if (!anchor || !HASH.test(anchor.target) || !HASH.test(anchor.context) || typeof anchor.strong !== 'boolean') {
+    throw new Error('Invalid anchor fingerprint.');
+  }
+  if (![anchor.before, anchor.after].every(n => Number.isInteger(n) && n >= 0 && n <= 2)) {
+    throw new Error('Invalid anchor context counts.');
+  }
 }
 function assertNote(note) {
   assertComment(note.text);
-  if (!ID.test(note.id)) throw new Error('Invalid note ID.');
-  if (!HASH.test(note.base)) throw new Error('Invalid base hash.');
-  if (!PERSISTED_STATES.includes(note.state)) throw new Error('Invalid note state.');
+  if (!ID.test(note.id)) {
+    throw new Error('Invalid note ID.');
+  }
+  if (!HASH.test(note.base)) {
+    throw new Error('Invalid base hash.');
+  }
+  if (!PERSISTED_STATES.includes(note.state)) {
+    throw new Error('Invalid note state.');
+  }
   assertAnchor(note.anchor);
-  if (!Number.isSafeInteger(note.line) || note.line <= note.anchor.before) throw new Error('Invalid anchor line.');
+  if (!Number.isSafeInteger(note.line) || note.line <= note.anchor.before) {
+    throw new Error('Invalid anchor line.');
+  }
 }
 function createNote(source, line, text, options = {}) {
   const lines = linesOf(source);

@@ -54,7 +54,7 @@ ET.fromstring(content_types)
 files = [root / 'package.json', root / 'README.md', root / 'LICENSE']
 for folder in ['src', 'media', 'integration']:
     files.extend(path for path in (root / folder).rglob('*') if path.is_file())
-files.extend(root / name for name in ['FORMAT.md', 'SECURITY.md', 'CHANGELOG.md'] if (root / name).exists())
+files.extend(root / name for name in ['FORMAT.md', 'SECURITY.md'] if (root / name).exists())
 with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
     for name, value in [('extension.vsixmanifest', manifest), ('[Content_Types].xml', content_types)]:
         info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))

@@ -27,7 +27,7 @@ test('editor defaults come directly from the extension manifest', () => {
   });
 });
 
-test('legacy marker-off preference is preserved, not silently reset', () => {
+test('explicit marker preferences are respected, including showMarkers false', () => {
   assert.equal(readSettings(config({ showMarkers: false })).showMarkers, false);
   assert.equal(readSettings(config({ markerStyle: 'icon' })).markerStyle, 'icon');
   assert.equal(readSettings(config({ markerStyle: 'off' })).markerStyle, 'off');

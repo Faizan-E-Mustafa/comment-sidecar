@@ -5,16 +5,9 @@ scripts/**
 node_modules/**
 *.vsix
 *.zip
-BENCHMARK.json
-TEST-RESULTS.txt
-TEST-RESULTS-ALIASES.txt
-REGRESSION-REPRODUCTION.txt
-VALIDATION.txt
-
 dist/**
 reports/**
 examples/**
 TESTING.md
-PERFORMANCE.md
 ROADMAP.md
 REFERENCES.md

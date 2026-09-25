@@ -14,12 +14,6 @@ function measure(fn, iterations = 100) {
   samples.sort((a, b) => a - b);
   return { medianMs: +samples[Math.floor(samples.length * 0.5)].toFixed(5), p95Ms: +samples[Math.floor(samples.length * 0.95)].toFixed(5) };
 }
-// Releases up to 0.1.4 exported createNote from format.js and chose v2 through a serializer option.
-function loadFormat(root, load) {
-  if (fs.existsSync(path.join(root, 'src/core/note.js'))) return { ...load('src/core/note.js'), ...load('src/core/format.js') };
-  const format = load('src/core/format.js');
-  return { createNote: format.createNote, parse: format.parse, serialize: (name, notes) => format.serialize(name, notes, { version: 2 }) };
-}
 function loadImplementation(root) {
   const load = relative => require(path.join(root, relative));
   const originalLoad = Module._load;
@@ -31,7 +25,7 @@ function loadImplementation(root) {
     ({ Store } = load('src/extension/store.js'));
   } finally { Module._load = originalLoad; }
   return { root, version: load('package.json').version, Store,
-    ...loadFormat(root, load), ...load('src/core/anchors.js'),
+    ...load('src/core/note.js'), ...load('src/core/format.js'), ...load('src/core/anchors.js'),
     ...load('src/core/render.js'), ...load('src/core/edits.js'), ...load('src/core/text.js') };
 }
 function noCommentEdit(implementation, tail) {

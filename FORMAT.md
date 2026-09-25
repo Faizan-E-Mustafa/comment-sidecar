@@ -1,8 +1,8 @@
-# Line Comments patch format
+# Line Comments sidecar format
 
 The attachment unit is a physical source line, not a function, symbol or Markdown section. Each source file may have one sibling sidecar, such as `app.tsx.comment`. No source file is modified by comment operations.
 
-This release reads and writes one format, v2. A v1 sidecar (header `# line-comments v1`) is rejected with an explicit "Unsupported legacy line-comments v1 sidecar" error; it is not parsed, treated as empty or overwritten. See [Upgrading from v1](#upgrading-from-v1).
+The header must be exactly `# line-comments v2`. Any other header, or any malformed content, is reported as an error; the file is never treated as empty or overwritten.
 
 ## Syntax
 
@@ -45,6 +45,3 @@ A source file and its sidecar are limited to 2 MiB each, with at most 1000 notes
 
 The source and sidecar hashes returned by agent reads are independent write guards. A sidecar write requires both; adding and reattaching additionally require the exact current target line text. Writer locks and atomic rename coordinate cooperating writers; see SECURITY.md for filesystem race limitations. Agents use the combined or comments-only reader, which does not emit per-note fingerprints.
 
-## Upgrading from v1
-
-Versions up to 0.1.4 could read v1 sidecars (which copied up to two source lines around each target) and convert them with `lc compact FILE --source-hash HASH --sidecar-hash HASH` or the editor command **Line Comments: Remove Copied Code from .comment**. This release removed that converter. Before upgrading, find remaining v1 files with `grep -rl '^# line-comments v1' --include='*.comment' .` and convert them with 0.1.4. A v1 file left in place is reported as an error by `lc check`, shows no markers, and is left byte-for-byte unchanged.

@@ -44,7 +44,7 @@ test('cleanup previews and removes only allowlisted build artifacts and reports'
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-clean-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   fs.mkdirSync(path.join(root, 'dist')); fs.mkdirSync(path.join(root, 'reports'));
-  const removable = ['line-comments-0.1.2.vsix', 'dist/line-comments-0.1.3.vsix', 'reports/BENCHMARK.json', 'TEST-RESULTS.txt'];
+  const removable = ['line-comments-0.1.2.vsix', 'dist/line-comments-0.1.3.vsix', 'reports/BENCHMARK.json', 'PERFORMANCE-COMPARISON.json'];
   const preserved = ['app.ts', 'app.ts.comment', 'app.ts.comment.lock', 'app.ts.comment.123.tmp', 'package.json', 'reports/my-notes.txt', 'dist/important.zip', 'fix.patch'];
   for (const file of [...removable, ...preserved]) fs.writeFileSync(path.join(root, file), 'keep unless generated');
   assert.deepEqual(clean(root), removable.sort());

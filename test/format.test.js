@@ -18,7 +18,7 @@ const note = () => createNote(SOURCE, 3, 'Wait until restoration finishes.', { i
 const v2 = notes => parse(serialize('app.ts', notes)).notes;
 const FIXTURES = path.join(__dirname, 'fixtures');
 const guards = snapshot => ({ expectedSource: snapshot.sourceHash, expectedSidecar: snapshot.sidecarHash });
-const LEGACY = '# line-comments v1\n--- app.ts\n+++ app.ts.annotated\n@@ -2,3 +2,4 @@ id=lc_old base=' + 'a'.repeat(64) + ' state=attached\n   const ready = session.ready;\n+// Legacy note.\n   if (!ready) return null;\n   return render();\n';
+const FOREIGN = '# line-comments v1\n--- app.ts\n+++ app.ts.annotated\n@@ -2,3 +2,4 @@ id=lc_old base=' + 'a'.repeat(64) + ' state=attached\n   const ready = session.ready;\n+// Unknown-version note.\n   if (!ready) return null;\n';
 
 test('v2 stores coordinates, fingerprints and comments without copying target or neighbor code', () => {
   const raw = serialize('app.ts', [note()]);
@@ -143,7 +143,7 @@ test('v2 insertion property check preserves attachment at 100 different offsets'
 });
 
 
-test('golden v2 sidecar written by 0.1.4 parses, re-serializes byte-identically and is reproduced by createNote', async () => {
+test('golden sidecar parses, re-serializes byte-identically and is reproduced by createNote', async () => {
   const [source, raw, expected] = await Promise.all(['golden.ts', 'golden.ts.comment', 'golden.ts.comment.json']
     .map(name => fs.readFile(path.join(FIXTURES, name), 'utf8')));
   const parsed = parse(raw);
@@ -175,20 +175,19 @@ test('createNote returns only the canonical fingerprint shape without copied sou
   assert.equal(createNote('a\r\nb', 1, 'one\r\ntwo').text, 'one\ntwo');
 });
 
-test('legacy-shaped or anchorless notes are rejected, never converted', () => {
-  const legacy = { id: 'lc_old', base: 'a'.repeat(64), state: 'attached', line: 3, before: ['a', 'b'], target: 'c', after: [], text: 'Old.' };
-  assert.throws(() => serialize('app.ts', [legacy]), /anchor/);
-  assert.throws(() => resolveNotes(SOURCE, [legacy]), /anchor/);
+test('notes with copied source instead of an anchor are rejected', () => {
+  const unanchored = { id: 'lc_old', base: 'a'.repeat(64), state: 'attached', line: 3, before: ['a', 'b'], target: 'c', after: [], text: 'Old.' };
+  assert.throws(() => serialize('app.ts', [unanchored]), /anchor/);
+  assert.throws(() => resolveNotes(SOURCE, [unanchored]), /anchor/);
   assert.throws(() => serialize('app.ts', [{ ...note(), anchor: { ...note().anchor, target: 'short' } }]), /anchor/);
   assert.throws(() => serialize('app.ts', [{ ...note(), anchor: { ...note().anchor, before: 3 } }]), /context counts/);
   assert.throws(() => serialize('app.ts', [{ ...note(), state: 'moved' }]), /state/);
   assert.throws(() => serialize('app.ts', [{ ...note(), state: 'ambiguous' }]), /state/);
 });
 
-test('v1 headers are rejected with an explicit unsupported-legacy error', () => {
-  assert.throws(() => parse(LEGACY), /Unsupported legacy line-comments v1/);
-  assert.throws(() => parse(LEGACY.replaceAll('\n', '\r\n')), /Unsupported legacy line-comments v1/);
-  assert.throws(() => parse('# line-comments v1'), /Unsupported legacy/);
+test('any header other than v2 is rejected as an unsupported version', () => {
+  assert.throws(() => parse(FOREIGN), /Unsupported line-comments sidecar version/);
+  assert.throws(() => parse(FOREIGN.replaceAll('\n', '\r\n')), /Unsupported line-comments sidecar version/);
   assert.throws(() => parse('# line-comments v3\n'), /Unsupported line-comments sidecar version/);
   assert.throws(() => parse(''), /Unsupported line-comments sidecar version/);
 });
@@ -224,10 +223,10 @@ test('service writes fingerprint anchors for add, reanchor, review and sync with
   assert.equal(await fs.readFile(path.join(root, 'app.ts'), 'utf8'), changed);
 });
 
-test('service rejects removed compact operation', async t => {
+test('service rejects unknown operations', async t => {
   const root = await workspace(t, serialize('app.ts', [note()]));
   const snapshot = await service.load(root, 'app.ts');
-  await assert.rejects(() => service.write(root, 'app.ts', { operation: 'compact', ...guards(snapshot) }), /Operation must be add, update, remove, reanchor, review, or sync/);
+  await assert.rejects(() => service.write(root, 'app.ts', { operation: 'rename', ...guards(snapshot) }), /Operation must be add, update, remove, reanchor, review, or sync/);
 });
 
 test('reading a valid v2 sidecar never rewrites it', async t => {
@@ -240,11 +239,11 @@ test('reading a valid v2 sidecar never rewrites it', async t => {
   assert.equal((await fs.stat(path.join(root, 'app.ts.comment'))).mtimeMs, before.mtimeMs);
 });
 
-for (const [label, sidecar] of [['legacy v1', LEGACY], ['malformed', '# line-comments v2\n--- app.ts\n+++ app.ts.annotated\n@@ broken\n']]) {
+for (const [label, sidecar] of [['unsupported-version', FOREIGN], ['malformed', '# line-comments v2\n--- app.ts\n+++ app.ts.annotated\n@@ broken\n']]) {
   test(`${label} sidecars are reported and left byte-identical by every write path`, async t => {
     const root = await workspace(t, sidecar);
     const file = path.join(root, 'app.ts.comment');
-    await assert.rejects(() => service.load(root, 'app.ts'), label === 'legacy v1' ? /Unsupported legacy/ : /hunk header/);
+    await assert.rejects(() => service.load(root, 'app.ts'), label === 'malformed' ? /hunk header/ : /Unsupported line-comments sidecar version/);
     const report = await service.check(root);
     assert.equal(report.problems, 1);
     assert.equal(report.reports[0].status, 'error');

@@ -3,14 +3,21 @@ const vscode = require('vscode');
 
 function markerText(needsReview, style) {
   const label = style === 'icon' ? '◌' : '◌ comment';
-  if (needsReview) return `${label} !`;
+  if (needsReview) {
+    return `${label} !`;
+  }
   return label;
 }
 function markerDecorations(document, byLine, { showMarkers, markerStyle }) {
-  if (!showMarkers || markerStyle === 'off') return [];
+  if (!showMarkers || markerStyle === 'off') {
+    return [];
+  }
+
   const options = [];
   for (const [line, notes] of byLine) {
-    if (line < 1 || line > document.lineCount) continue;
+    if (line < 1 || line > document.lineCount) {
+      continue;
+    }
     const needsReview = notes.some(item => item.status === 'review');
     options.push({
       range: document.lineAt(line - 1).range,
@@ -41,7 +48,8 @@ function diagnosticsFor(document, results) {
       ? `External comment ${result.note.id} is ${result.status} (previously line ${result.note.line}). ${result.reason}`
       : `External comment at line ${result.line} needs review. ${result.reason}`;
     const diagnostic = new vscode.Diagnostic(document.lineAt(line).range, message, vscode.DiagnosticSeverity.Warning);
-    diagnostic.source = 'Line Comments'; diagnostic.code = result.note.id;
+    diagnostic.source = 'Line Comments';
+    diagnostic.code = result.note.id;
     return diagnostic;
   });
 }
