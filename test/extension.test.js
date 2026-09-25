@@ -200,37 +200,26 @@ async function addDraft(api, root, text = 'Wait for initialization.') {
   await api.drafts.writeFile(uri, Buffer.from(text));
   return uri;
 }
-test('defaults render labeled comment marker without status bar or revision metadata', async t => {
+test('defaults show the labeled ring with one comment body and no healthy status or revision metadata', async t => {
   const { root, document, editor, api } = await setup(t);
   await addDraft(api, root);
   await api.refresh(document.uri);
   assert.equal(editor.decorations.length, 1);
-  assert.equal(
-    editor.decorations[0].renderOptions.after.contentText,
-    '◌ comment'
-  );
+  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ comment');
   assert.equal(vscode.status.visible, false);
   const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 3), { isCancellationRequested: false });
   assert.equal(hover.contents.length, 1);
   assert.equal(hoverText(hover), 'Wait for initialization.');
 });
-test('marker can use icon-only mode without decoration hover', async t => {
+test('optional markers are rings with no decoration hover to duplicate provider content', async t => {
   const { root, document, editor, api } = await setup(t);
   await addDraft(api, root);
   vscode.configuration.showMarkers = true;
   vscode.configuration.markerStyle = 'icon';
   await api.refresh(document.uri);
-
   assert.equal(editor.decorations.length, 1);
-  assert.equal(
-    editor.decorations[0].renderOptions.after.contentText,
-    '◌'
-  );
-  assert.equal(
-    Object.hasOwn(editor.decorations[0], 'hoverMessage'),
-    false
-  );
-
+  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌');
+  assert.equal(Object.hasOwn(editor.decorations[0], 'hoverMessage'), false);
   vscode.configuration.showMarkers = false;
   await api.refresh(document.uri);
   assert.deepEqual(editor.decorations, []);
@@ -393,4 +382,115 @@ test('an unreadable sidecar clears prior highlights instead of showing stale att
   await api.refresh(document.uri);
   assert.ok(highlightSets(editor).every(([, ranges]) => ranges.length === 0));
   assert.ok(vscode.logs.some(line => line.includes('sidecar version')));
+});
+
+test('marker style can hide labels without disabling highlights or hover', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root);
+  vscode.configuration.markerStyle = 'off';
+  await api.refresh(document.uri);
+  assert.deepEqual(editor.decorations, []);
+  assert.ok(highlightSets(editor).some(([, ranges]) => ranges.length));
+  const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
+  assert.equal(hoverText(hover), 'Wait for initialization.');
+});
+test('review markers retain the dashed circle in both labeled and icon modes', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root);
+  await api.store.get(document);
+  const offset = document.text.indexOf('wait()');
+  document.text = document.text.replace('wait()', 'awaitReady()'); document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: offset, rangeLength: 6, text: 'awaitReady()' }] });
+  await api.refresh(document.uri);
+  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ comment !');
+  vscode.configuration.markerStyle = 'icon';
+  await api.refresh(document.uri);
+  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ !');
+});
+test('files without annotations update preview source without building edit history', async t => {
+  const { document, api } = await setup(t);
+  const entry = await api.store.get(document);
+  assert.equal(entry.history.size, 0);
+  for (let i = 0; i < 25; i++) {
+    document.text = '\n' + document.text; document.version++;
+    api.store.changed({ document, contentChanges: [{ rangeOffset: 0, rangeLength: 0, text: '\n' }] });
+  }
+  assert.equal(entry.source, document.text);
+  assert.equal(entry.version, document.version);
+  assert.equal(entry.history.size, 0);
+  assert.equal(entry.byLine.size, 0);
+});
+test('a saved source reuses the service resolution and line lookup groups same-line comments', async t => {
+  const { root, document, api } = await setup(t);
+  await addDraft(api, root, 'First.');
+  await addDraft(api, root, 'Second.');
+  const entry = await api.store.get(document);
+  assert.equal(entry.results, entry.snapshot.results);
+  assert.equal(entry.byLine.size, 1);
+  assert.equal(entry.byLine.get(2).length, 2);
+  // Reject full-list scans specifically in the hover path.
+  entry.results.filter = () => { throw new Error('Hover scanned all annotations.'); };
+  const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
+  assert.equal(hover.contents.length, 2);
+  const bodies = hover.contents.map(content => content.parts.map(part => part.value).join(''));
+  assert.deepEqual(bodies, entry.byLine.get(2).map(item => item.note.text));
+  assert.deepEqual([...bodies].sort(), ['First.', 'Second.']);
+});
+test('line lookup follows edits, deletion and undo without returning stale positions', async t => {
+  const { root, document, api } = await setup(t);
+  await addDraft(api, root);
+  const entry = await api.store.get(document);
+  const before = document.text;
+  document.text = '\n' + before; document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: 0, rangeLength: 0, text: '\n' }] });
+  assert.equal(entry.byLine.has(2), false);
+  assert.equal(entry.byLine.get(3).length, 1);
+  document.text = before; document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: 0, rangeLength: 1, text: '' }] });
+  assert.equal(entry.byLine.has(3), false);
+  assert.equal(entry.byLine.get(2).length, 1);
+  const start = before.indexOf('if (!ready)'), length = before.indexOf('\n', start) - start + 1;
+  document.text = before.slice(0, start) + before.slice(start + length); document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: start, rangeLength: length, text: '' }] });
+  assert.equal(entry.byLine.size, 0);
+  document.text = before; document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: start, rangeLength: 0, text: before.slice(start, start + length) }] });
+  assert.equal(entry.byLine.get(2).length, 1);
+});
+
+test('manifest defaults render the original labeled ring and a single hover contribution', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root);
+  await api.refresh(document.uri);
+  assert.equal(editor.decorations.length, 1);
+  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ comment');
+  assert.equal(Object.hasOwn(editor.decorations[0], 'hoverMessage'), false);
+  const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
+  assert.equal(hover.contents.length, 1);
+  assert.equal(hoverText(hover), 'Wait for initialization.');
+});
+
+test('persistent showMarkers=false only hides markers, not highlights or hover', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root);
+  vscode.configuration.showMarkers = false;
+  await api.refresh(document.uri);
+  assert.deepEqual(editor.decorations, []);
+  assert.ok(highlightSets(editor).some(([, ranges]) => ranges.length));
+  const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
+  assert.equal(hoverText(hover), 'Wait for initialization.');
+  vscode.configuration.showMarkers = true;
+  await api.refresh(document.uri);
+  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ comment');
+});
+
+test('multiple annotations share one labeled ring while retaining both comment bodies', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root, 'First reason.');
+  await addDraft(api, root, 'Second reason.');
+  await api.refresh(document.uri);
+  assert.equal(editor.decorations.length, 1);
+  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ comment');
+  const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
+  assert.equal(hover.contents.length, 2);
 });

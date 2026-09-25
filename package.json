@@ -2,7 +2,7 @@
   "name": "line-comments",
   "displayName": "Line Comments",
   "description": "Per-line comments in sibling .comment patches. Hover context, line tracking, review warnings, and agent CLI/MCP access without changing source.",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "publisher": "line-comments-local",
   "license": "MIT",
   "engines": {
@@ -38,12 +38,14 @@
     "virtualWorkspaces": false
   },
   "scripts": {
-    "test": "node --test test/*.test.js",
+    "test": "node scripts/test.js",
     "check": "node scripts/check-syntax.js",
     "benchmark": "node scripts/benchmark.js",
     "package": "python3 scripts/package-vsix.py",
     "test:aliases": "node scripts/test-aliases.js",
-    "clean": "node scripts/clean.js"
+    "clean": "node scripts/clean.js",
+    "verify": "npm test && npm run test:aliases && npm run check",
+    "release": "npm run verify && python3 scripts/package-release.py"
   },
   "contributes": {
     "languages": [
@@ -153,21 +155,6 @@
           "default": true,
           "description": "Show the external-comment marker. Enabled by default. Use markerStyle to choose the labeled ring or ring only."
         },
-        "lineComments.markerStyle": {
-          "type": "string",
-          "enum": [
-            "label",
-            "icon",
-            "off"
-          ],
-          "default": "label",
-          "enumDescriptions": [
-            "Dashed circle and comment text: ◌ comment.",
-            "Dashed circle only: ◌.",
-            "Hide markers; comments are still available on hover."
-          ],
-          "description": "Annotation marker appearance. Review markers append !."
-        },
         "lineComments.showHoverMetadata": {
           "type": "boolean",
           "default": false,
@@ -187,6 +174,21 @@
             "Do not highlight annotated lines; hover remains available."
           ],
           "description": "How annotated source lines are highlighted. Does not replace syntax colors or change source text."
+        },
+        "lineComments.markerStyle": {
+          "type": "string",
+          "enum": [
+            "label",
+            "icon",
+            "off"
+          ],
+          "default": "label",
+          "enumDescriptions": [
+            "Dashed circle and comment text: ◌ comment.",
+            "Dashed circle only: ◌.",
+            "Hide markers; comments are still available on hover."
+          ],
+          "description": "Annotation marker appearance. Existing showMarkers: false settings still hide markers. Review markers append !."
         }
       }
     },

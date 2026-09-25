@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.1.4 — consolidated source release
+
+- Ships a complete source archive and byte-matched VSIX; no patch chain or local merge is required.
+- Keeps the original `◌ comment` default, `◌` icon mode, line highlights, and per-line v1/v2 formats.
+- Reads editor defaults from the manifest, preserving explicit user settings while eliminating duplicated fallbacks.
+- Reads CLI/MCP version metadata from `package.json`; adds CLI `--version`.
+- Adds a portable explicit test-file runner and `npm run verify` / `npm run release`.
+- Cross-checks source/runtime bytes, packaged local imports, version manifests and archive integrity; emits SHA-256 checksums.
+- Replaces incremental upgrade instructions with a single setup guide and adds configuration/version/UI regression tests.
+- No new sidecar format, Rust port, automatic agent interception, or comparative speedup claim.
+
 ## 0.1.3
 
 - Restore `◌ comment` as the default marker. Add `markerStyle: label | icon | off`; icon-only uses `◌`. Retain `showMarkers` as a visibility override; existing false values are not silently overwritten. Review appends `!`; highlighting and single safe hover remain.

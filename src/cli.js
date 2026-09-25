@@ -3,8 +3,9 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const service = require('./node/service');
+const { version } = require('../package.json');
 
-const HELP = `Line Comments 0.1.2 — line-level external comments, without modifying source.
+const HELP = `Line Comments ${version} — line-level external comments, without modifying source.
 
 lc read FILE [--start N --end N] [--mode annotated|comments|code] [--comment-budget N] [--json]
 lc add FILE --line N --text TEXT --expected-text TEXT --source-hash HASH --sidecar-hash HASH
@@ -16,6 +17,7 @@ lc sync FILE --source-hash HASH --sidecar-hash HASH
 lc compact FILE --source-hash HASH --sidecar-hash HASH
 lc check [FILE] [--json]
 lc rules
+lc --version
 
 All commands accept --root PATH (default: current directory).
 Use --text-file PATH instead of --text for multiline comments.
@@ -24,14 +26,14 @@ check exits 1 for comments requiring attention, 2 for invocation errors.
 `;
 function argumentsOf(argv) {
   const positional = [], flags = {};
-  const allowed = new Set(['root', 'start', 'end', 'mode', 'json', 'help', 'line', 'text', 'text-file', 'expected-text', 'source-hash', 'sidecar-hash', 'id', 'comment-budget']);
+  const allowed = new Set(['root', 'start', 'end', 'mode', 'json', 'help', 'version', 'line', 'text', 'text-file', 'expected-text', 'source-hash', 'sidecar-hash', 'id', 'comment-budget']);
   for (let i = 0; i < argv.length; i++) {
     const value = argv[i];
     if (!value.startsWith('--')) { positional.push(value); continue; }
     const name = value.slice(2);
     if (!allowed.has(name)) throw new Error(`Unknown flag: ${value}`);
     if (Object.hasOwn(flags, name)) throw new Error(`Repeated flag: ${value}`);
-    if (['json', 'help'].includes(name)) { flags[name] = true; continue; }
+    if (['json', 'help', 'version'].includes(name)) { flags[name] = true; continue; }
     if (i + 1 >= argv.length) throw new Error(`Missing value after ${value}`);
     flags[name] = argv[++i];
   }
@@ -41,6 +43,7 @@ async function main(argv = process.argv.slice(2)) {
   const { positional, flags } = argumentsOf(argv);
   const [command, file] = positional;
   const root = path.resolve(flags.root || process.cwd());
+  if (flags.version) { process.stdout.write(`${version}\n`); return; }
   if (flags.help || !command || command === 'help') { process.stdout.write(HELP); return; }
   if (command === 'rules') { process.stdout.write(await fs.readFile(path.join(__dirname, '../integration/AGENTS.snippet.md'), 'utf8')); return; }
   if (command === 'check') {

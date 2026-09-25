@@ -2,7 +2,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const pending = ['src', 'test', 'scripts'];
+const root = path.resolve(__dirname, '..');
+const pending = ['src', 'test', 'scripts'].map(folder => path.join(root, folder));
 let count = 0;
 while (pending.length) {
   const directory = pending.pop();

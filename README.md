@@ -1,205 +1,170 @@
-# Line Comments · 0.1.3
+# Line Comments
 
-Per-line explanatory comments stored in sibling `.comment` patches, projected onto the original code in VS Code. Includes a CLI and optional local MCP server for agents.
-
-**A runnable prototype, not a production certification.** Core, filesystem, CLI, MCP and mocked editor tests are included. It has not been launched inside a real VS Code or Cursor desktop in the build environment. Cursor agent behavior and desktop interaction need a smoke test on your machine.
+Per-line comments stored next to code, not inside it. **Consolidated release 0.1.4.**
 
 ```text
-src/app.tsx          implementation, unchanged by this tool
-src/app.tsx.comment  independent, line-anchored comment-only hunks
+app.tsx          Source, never written by this tool.
+app.tsx.comment  Comments attached to individual source lines.
 ```
 
-No cloud service, API key, model calls, build transformation, external runtime packages, embeddings, or AST service. UTF-8 text is supported independently of programming language. Machine-significant comments stay in source.
+In the editor:
 
-## Try the extension
+```text
+if (loading) return <Splash />;    ◌ comment
+```
 
-Install the supplied `line-comments-0.1.3.vsix` through **Extensions → … → Install from VSIX**. In VS Code, the shell equivalent is:
+Hover the line to read its comments. The label and highlighting are decorations, not source characters. This is the original line/diff-based model: no symbol-level documentation system, Markdown replacement, generated essays, or AST dependency.
+
+## Start with the complete release
+
+Extract `line-comments-0.1.4-source.zip` into a **new directory**. It creates `line-comments-0.1.4/`. Do not apply any older patch, copy isolated modules, or extract over your partly patched folder. Keep the old directory until you have recovered any independent edits or sidecars you need.
+
+The accompanying `line-comments-0.1.4.vsix` is built from this same source. Install it using **Extensions → … → Install from VSIX**, then run **Developer: Reload Window**. The existing extension ID is retained: `line-comments-local.line-comments`. Existing user/workspace settings remain in effect.
+
+In VS Code, the shell installation equivalent is:
 
 ```sh
-code --install-extension line-comments-0.1.3.vsix
+code --install-extension ./line-comments-0.1.4.vsix --force
 ```
 
-In Cursor, use its Install from VSIX command where available. This extension uses the stable VS Code API with engine floor 1.85, but Cursor is a separate test target. Enterprise policy may prevent unsigned local VSIX installation. This is an unsigned local package; no Marketplace or Open VSX release has been published.
+Cursor is a separate desktop validation target. Use its VSIX installation action. This is an unsigned local package, not a published Marketplace or Open VSX release.
 
-Open the `examples` folder and `app.tsx`. Lines 4 and 5 have a subtle blue tint and a left-edge accent. Hover them to read the comments. The example now includes `fixture.d.ts` and a local `tsconfig.json` using JSX preserve mode. It type-checks without React dependencies; it remains an editor fixture, not an executable React application. Use the **new examples folder**, since installing a VSIX does not update a previously extracted workspace.
+Open this release's `examples` folder and hover lines 4 and 5 in `app.tsx`. The example is a type-checkable editor fixture, not an executable React application.
 
-To run from source instead of installing the package, open this repository in VS Code and use the included **Run Line Comments Extension** launch configuration (F5). No dependency installation or build step is required.
+## Build from source
 
-### Authoring
+Use Node.js 18.17+ with npm. Packaging also needs Python 3.9+. No dependency installation, compiler, or network access is required for the supplied build scripts.
 
-Place the cursor on a saved source line. Run **Line Comments: Add Comment at Line** (macOS: `Cmd+Alt+;`, Windows/Linux: `Ctrl+Alt+;`). A plain-text comment editor opens beside the source. Write a single-line or multiline explanation and save. Only `<source>.comment` is written. Return to the source and hover the annotated line.
+```sh
+cd line-comments-0.1.4
+npm run release
+```
 
-The source and existing sidecar must be saved before creating or editing a note. If either changes while the comment draft is open, a conflicting draft save is rejected. Reopen the comment against the fresh source rather than overwriting somebody else's work. A new empty draft is not saved; type a nonempty comment before saving.
+That runs the regular test suite, the directory-alias regression suite, and JavaScript syntax checks. It then creates and cross-checks:
 
-Commands also cover editing, deleting, listing, explicitly reviewing, reattaching to the current line, opening the raw patch, opening a read-only annotated preview, copying an annotated selection, checking the workspace, copying agent instructions, and copying Cursor MCP configuration.
+```text
+dist/line-comments-0.1.4.vsix
+dist/line-comments-0.1.4-source.zip
+dist/SHA256SUMS
+```
 
-Healthy comments show only their text on hover, once. The default end-of-line marker is `◌ comment`; normal-state status-bar counts remain hidden. Review warnings remain visible; genuine language diagnostics are not disabled.
+Source/runtime file equality, local runtime imports, manifest versions, and archive integrity are checked. Neither archive contains old patches or nested release artifacts. The source includes tests; the installed VSIX excludes development tests/scripts/examples.
+
+Other commands:
+
+```sh
+npm test                 # Node tests, explicit file list (no shell glob dependency).
+npm run test:aliases     # Repeat through an aliased temporary directory.
+npm run check            # Syntax-check JavaScript.
+npm run verify           # All three checks above.
+npm run package          # VSIX only, without running tests first.
+npm run benchmark        # Synthetic measurements in reports/.
+npm run clean            # Preview generated-file cleanup; deletes nothing.
+npm run clean -- --apply # Delete only recognized generated-artifact categories.
+```
+
+For extension development, open this source folder in VS Code and run the supplied F5 launch configuration. The runtime stays JavaScript/Node.js; Python is only build tooling. No Rust or native binary is involved.
+
+## Marker and highlight settings
+
+These are the default settings. Set them explicitly to undo older settings that disabled markers:
 
 ```json
 {
-  "lineComments.highlightStyle": "line",
   "lineComments.showMarkers": true,
   "lineComments.markerStyle": "label",
+  "lineComments.highlightStyle": "line",
   "lineComments.showHoverMetadata": false
 }
 ```
 
-`markerStyle` is `label` (default: `◌ comment`), `icon` (`◌` alone), or `off`. A review warning appends `!` in either visible style. An existing `showMarkers: false` setting still hides markers; set it to true to restore them. There is no duplicate decoration hover. `showHoverMetadata: true` restores IDs, status and reasons for debugging. Do not turn off `editor.hover.enabled`: that disables comment hovers too.
+| Setting | Choices |
+|---|---|
+| `markerStyle` | `label`: `◌ comment`; `icon`: `◌`; `off`: no marker. |
+| `showMarkers` | Legacy visibility switch. `false` hides any marker style. |
+| `highlightStyle` | `line`: subtle tint/left edge; `underline`; `off`. |
+| `showHoverMetadata` | `false`: comment text and necessary warnings; `true`: IDs, attachment status and reason. |
 
-`highlightStyle` is `line` (default), `underline`, or `off`. Normal syntax colors remain unchanged. Comments needing review use amber; missing or ambiguous targets are not highlighted at their old positions. Themes can override `lineComments.highlightBackground`, `lineComments.highlightBorder`, `lineComments.reviewBackground`, and `lineComments.reviewBorder` under `workbench.colorCustomizations`. All color overrides belong to the editor settings, not the sidecar.
+Needs-review annotations retain the circle and append `!`: `◌ comment !` or `◌ !`. They use the warning highlight. Missing/ambiguous targets do not receive a marker at an obsolete line. Multiple notes on one line share one marker; each note body appears once in our hover contribution.
 
-Native hover content is shared with other providers. To keep GitLens commit popups on its annotations rather than the code itself, manually merge these settings (the extension never changes another extension's preferences):
+The extension contributes one hover provider, with no duplicate decoration hover. It does not suppress TypeScript errors or another extension's hover cards. Highlight colors use `lineComments.highlightBackground`, `highlightBorder`, `reviewBackground`, and `reviewBorder` theme tokens.
 
-```json
-{
-  "gitlens.hovers.currentLine.over": "annotation",
-  "gitlens.hovers.annotations.over": "annotation"
-}
-```
+Defaults are declared in `package.json`; `src/extension/settings.js` reads those definitions rather than duplicating defaults. CLI and MCP versions also come from `package.json`.
 
-Keep `editor.hover.enabled` enabled. Setting `gitlens.hovers.enabled` to `false` disables all GitLens hovers instead, not ours. Real TypeScript diagnostics may still share the native hover.
+## Write and maintain comments
 
-### Code-free sidecars
+Place the cursor on a saved source line and run **Line Comments: Add Comment at Line** (`Cmd+Alt+;` on macOS). A plain-text draft opens alongside the source. Write the comment and save: only the sibling `.comment` changes.
 
-New comment files use **v2**: line coordinates, comment bodies, IDs, revision guards and SHA-256 fingerprints of the target/context. They do not automatically copy target or neighboring source code. This remains a per-line diff-like format, not Markdown or symbol-level documentation.
+Save the source and any existing sidecar before creating/editing a note. A draft based on stale source or sidecar revisions fails rather than overwriting newer changes. The tool writes explanatory comments only; compiler/linter directives, licenses, and other machine-significant comments remain in source.
 
-V1 copied up to five source lines as an attachment anchor. V2 compares their fingerprints instead. Existing v1 files remain readable and keep their version on ordinary edits/saves. To convert one deliberately, open its source file, save source and sidecar, then run **Line Comments: Remove Copied Code from .comment**. The command asks for confirmation; commit or back up the sidecar first because v0.1.0/v0.1.1 cannot read v2. Only the sidecar is changed. IDs, text and review/detachment semantics are preserved; conversion does not guess a new target or mark stale comments reviewed.
+The command palette also provides **Edit Comment**, **Delete Comment**, **Mark Comment Reviewed**, **Reattach Comment to This Line**, **List File Comments**, **Open .comment Patch**, **Open Annotated Preview**, **Copy Annotated Selection**, and **Check Workspace**.
 
-Terminal equivalent after a fresh `read`:
+Source-line tracking is based on editor edit ranges and source context/fingerprints, not symbol names. Normal insertions above a target move its annotation. Changed targets require review; deleted, split, or ambiguous targets may need explicit reattachment. Checks establish attachment status, **not the truth of a comment**. A comment can become wrong when requirements or dependencies change even if its source line stays identical.
 
-```sh
-node src/cli.js compact src/app.tsx \
-  --source-hash SOURCE_HASH_FROM_READ \
-  --sidecar-hash SIDECAR_HASH_FROM_READ
-```
+Editor file renames include sibling-sidecar rename edits without overwriting an existing destination. External renames and cross-file moves are not magically reconciled; inspect the checker output. Old-format conversion is explicit and never performed on startup.
 
-Fingerprints are matching metadata, not encryption or proof of semantic identity. Exact-context moves can be located; arbitrary rewrites and cross-file moves still need review/reattachment. V2 may be larger in bytes than short v1 code snippets; it removes duplicated code, not necessarily metadata size. Agents should continue using the combined reader, which omits per-note fingerprints, rather than reading the raw sidecar.
+## Sidecar formats
 
-### Updating from 0.1.0, 0.1.1 or 0.1.2
+**New files use format 2:** per-line hunks, readable comment bodies, and generated target/context fingerprints. Source text is not copied into the sidecar automatically.
 
-Install the new VSIX over the existing extension and run **Developer: Reload Window**. Extract the new source archive into a separate folder for tests and the updated example. Legacy `.comment` files do not require migration; the code-free conversion is opt-in. The update does not overwrite comments in existing workspaces.
+**Existing format 1 files remain supported:** they hold copied source context around the comment. To convert, back up the sidecar, open its saved source, and run **Line Comments: Remove Copied Code from .comment**. Confirmation and fresh revision checks are required. This release introduces no third format.
 
-The CLI/MCP still return revision guards for safe writes. Editor-only display settings do not alter the agent protocol or strip those guards.
+Both are custom comment-only formats. **Do not run `git apply` on a `.comment` file.** They are not source patches and are not Markdown documentation. See [FORMAT.md](FORMAT.md).
 
-### Movement and review
+## Agents: CLI or optional local MCP
 
-Precise editor changes track positions. An edited line becomes `review`. Deleted, split or joined targets are conservatively detached. On source save, tracked annotations are persisted to the sidecar; failed or conflicting automatic writes are logged in the **Line Comments** Output channel. Problems shows detached, ambiguous and review-needed notes. Unsaved sidecar edits prevent automatic rebasing.
+The extension does not intercept another agent's native reader. Installing it alone does not make an agent receive hover comments. Choose a tool/rule integration and verify that the agent actually uses it.
 
-For changes made outside the editor, exact target plus neighboring context can relocate uniquely. A unique matching target with changed context is only provisional (`review`). Duplicate matches are ambiguous; missing targets are detached. No proximity-based guessing is used.
-
-Editor-originated file renames contribute the sibling rename to the same workspace edit without overwrite. External renames need the `.comment` sibling moved as well; `check` reports orphaned sidecars. Cross-file code moves and function splits require explicit reattachment. In-session undo can restore recent attachment snapshots (16 revisions); this is not an unlimited persistent undo ledger.
-
-**`attached` describes positioning, not truth.** A comment can be semantically obsolete even when its line is unchanged. Tests and human review still matter.
-
-## Agent CLI
-
-Requires Node 18.17 or later. The extension uses the editor's Node runtime; only external CLI/MCP use needs Node installed on PATH. From this repository:
+For the CLI, run from this source folder:
 
 ```sh
+node src/cli.js --version
 node src/cli.js read examples/app.tsx --start 1 --end 8
-node src/cli.js read examples/app.tsx --start 4 --end 5 --mode comments
+node src/cli.js read examples/app.tsx --start 1 --end 8 --mode comments
 node src/cli.js check examples/app.tsx
 ```
 
-Optionally install the local CLI command:
+For a different repository, supply `--root /absolute/path/to/repository` and a source path relative to that root. `read` combines requested source and comments, preserving real source line numbers and returning source/sidecar revision hashes. `--mode comments` avoids resending known source. `--comment-budget N` bounds comment-body characters and explicitly reports omissions; it is not a tokenizer.
 
-```sh
-npm link
-lc read examples/app.tsx --start 4 --end 5
-```
+Agent writes require both hashes from a fresh read. `add`/`reanchor` also require the exact target line text. The CLI constructs patch metadata; the agent does not need to calculate hashes or hunk offsets itself. Run `node src/cli.js --help` for the write commands and `--text-file` support.
 
-Run from the target repository root, or pass `--root /absolute/repository` and a path within that root. No public npm package is assumed.
+In the editor, run **Line Comments: Copy Agent Instructions** and merge the result into one supported rule file. Do not install duplicate copies into multiple instruction routes. The rules explain how to use comments; they are not the comments themselves.
 
-Reads provide `source` and `sidecar` revision hashes. To add a comment, copy both values from a fresh read:
+For Cursor Agent, run **Line Comments: Copy Cursor MCP Configuration** with a source file in the target workspace active. Choose read-only or sidecar-write access and merge the copied entry into `.cursor/mcp.json`. The tools are `line_comments_read`, `line_comments_check`, and (when enabled) `line_comments_write`. A VS Code MCP example is also provided in `integration/`.
 
-```sh
-lc add src/app.tsx \
-  --line 4 \
-  --expected-text '  if (loading) return <Splash />;' \
-  --text 'Wait for session restoration before choosing a screen.' \
-  --source-hash SOURCE_HASH_FROM_READ \
-  --sidecar-hash SIDECAR_HASH_FROM_READ
-```
+**After upgrading:** a copied MCP/CLI configuration may still reference an old extension/source path. Copy it again from the new installation, update the existing entry, and restart that MCP server. Installing the VSIX does not rewrite agent configurations. Read-only is the server default; standalone writable use requires `--allow-write`.
 
-Use `--text-file comment.txt` for multiline text. `lc --help` lists update, remove, reanchor, review and sync operations. `lc check` scans sidecars, returns JSON and exits 1 when attention is required; usage and execution errors exit 2. It does not verify business rules.
+The CLI/rule route does not require MCP. Neither route guarantees that third-party agents will follow the instructions, and success with an agent does not imply inline-completion integration.
 
-Reads default to 200 lines and allow at most 1000. A response reports the next range and notes outside the requested range. The default total comment-body budget is 12,000 characters; `--comment-budget` can set 0–64,000. Omitted content is marked explicitly. Narrow the range or raise the budget to obtain long comments in full. These are character limits, not claimed token counts.
+## Token and performance boundaries
 
-## Cursor and other agents
+Editor hovers make no model requests and therefore use no model tokens from this extension. Agents still pay for returned comment text, tool definitions, instructions and invocation wrappers. Combined reads avoid sending the source twice; comments-only reads avoid resending source already in context. There is no promised percentage saving.
 
-The editor and the agent are separate consumers. Hover text is **not automatically injected into Cursor Agent, Tab, inline edits, or another agent's native file-read tool**.
+The inherited performance improvements remain: lazy full fingerprint indexing, direct cached per-line hover lookup, resolved-snapshot reuse, and no edit-history hashing for files without annotations. No new comparative speedup is claimed for 0.1.4. [PERFORMANCE.md](PERFORMANCE.md) preserves the earlier synthetic benchmark methodology and its limitations.
 
-For Cursor, run **Line Comments: Copy Cursor MCP Configuration** and merge the copied server entry into `.cursor/mcp.json`. Choose read-only mode first or explicitly allow sidecar writes. The command copies configuration only: it does not overwrite existing settings or install an MCP server in any account. Node must be available in the environment that starts the server. Copy the configuration again after an extension upgrade changes its installed path.
-
-Alternatively use `integration/cursor-mcp.example.json`, replacing the absolute tool path. `integration/vscode-mcp.example.json` is a separate configuration example for VS Code clients with MCP support. Remove `--allow-write` to expose read and check only.
-
-The stdio server exposes:
+## Project map
 
 ```text
-line_comments_read   source + selected per-line notes; comments-only mode available
-line_comments_check  attachment/review diagnostics
-line_comments_write  optional sidecar writes with revision and target guards
+src/core/          Formats, line fingerprints, matching, edit tracking, agent rendering.
+src/extension/     VS Code integration, settings, highlights, hovers, drafts, cache.
+src/node/          Workspace/filesystem constraints and guarded sidecar writes.
+src/cli.js         Command-line interface.
+src/mcp.js         Optional local stdio tool server.
+integration/       Agent instructions and client configuration examples.
+media/             Sidecar syntax grammar.
+examples/          Editor fixture.
+test/              Automated regression tests.
+scripts/           Verification, packaging, benchmarks, generated-file cleanup.
+dist/              Generated releases; ignored.
+reports/           Generated test/benchmark output; ignored.
 ```
 
-The default server is read-only. The writable server cannot edit source through its defined tools. It is an intentionally small dependency-free MCP tools server, not a general MCP SDK implementation: no remote HTTP, OAuth, resources, prompts, progress streaming, or client sampling.
+Keep both format implementations and the tests. `.comment` files, including detached notes, are user data—not disposable cache files. Cleanup does not delete them, source, `.git`, arbitrary documents, or active sidecar locks.
 
-Then choose **one** instruction path: merge `integration/AGENTS.snippet.md` into an existing AGENTS.md, or copy `integration/cursor-rule.mdc` into `.cursor/rules/line-comments.mdc`. Do not install both duplicates solely for this extension. The copy-instructions command can generate the local absolute CLI invocation for clients without MCP.
+## Validation and limitations
 
-Instruction files explain the read/write convention; the comments themselves remain per-line `.comment` patches. Client rules do not force every tool use. Test each agent's adoption; deterministic automatic inclusion requires control over its read pipeline or a supported client-specific integration. This build does not intercept native tools.
+The regular and aliased-path Node suites exercise real core/filesystem/CLI/MCP code; editor tests use a **mocked VS Code API**. The source and VSIX are cross-checked, and the release can rebuild from its own source ZIP without old patch files.
 
-## Token behavior
+Real VS Code/Cursor desktop rendering, macOS/Windows extension hosts, third-party agent adoption, actual model-token accounting, and hostile-process filesystem races are not certified by those tests. Files are limited to 2 MiB and UTF-8 text; generated/dependency directories are excluded. Dirty-file guards and revision checks protect against ordinary cooperating writers, not an actively malicious local process.
 
-Editor hover, parsing, line tracking and patch writes make zero model requests. An agent sees only the data its client sends to a model. A combined read replaces a source read rather than repeating it, and strips raw diff context and per-hunk hashes. Use comments-only mode when the code is already in context. Rule instructions, tool descriptions, hashes, note IDs, tool arguments and returned comment text still add input/output overhead.
-
-External storage does not inherently compress comments. Compared with equally scoped inline comments, expect extra wrapper/integration overhead unless selective retrieval avoids irrelevant notes. Compared with code that has no comments, supplied notes necessarily add content. Total-task savings from fewer mistakes are a hypothesis to measure, not a guaranteed token reduction.
-
-Benchmark task input/output tokens and task success against (a) no notes, (b) inline comments, (c) reading raw sidecars, and (d) combined reads. Use the same model, task, code range, note content and correctness criterion; account for repeated reads and each client's prompt caching/billing separately. No model-token benchmark was run here.
-
-## Structure
-
-```text
-src/core/       patch format, resolution, editor edit mapping, range rendering
-src/node/       bounded workspace file access, locks, revision-guarded writes
-src/extension/  hover, drafts, commands, decorations, diagnostics and session store
-src/cli.js      standalone terminal interface
-src/mcp.js      local stdio agent adapter
-integration/   setup instructions and optional client configuration
-examples/      small source + sidecar fixture
-test/          core, real filesystem/CLI/MCP and mocked editor tests
-```
-
-## Validation and packaging
-
-```sh
-npm test
-npm run test:aliases
-npm run check
-npm run benchmark
-npm run package
-```
-
-`npm run check` checks JavaScript syntax, not TypeScript types. This prototype is plain CommonJS JavaScript and has no transpilation step. Packaging uses the included Python 3 script and ZIP/XML standard libraries. The produced VSIX is `dist/line-comments-0.1.3.vsix`, a local unsigned archive. Tests, packaging scripts, development reports and example fixtures are not packaged; they remain in the source distribution. A publisher can instead use `vsce package` and publish under a registered publisher after desktop testing; the placeholder `line-comments-local` is not a claimed public publisher.
-
-See FORMAT.md, SECURITY.md, TESTING.md, PERFORMANCE.md and ROADMAP.md for exact scope and limitations. Keep `.comment` files in version control with source. Never run `git apply` on them: both formats are independent annotation records, not general-purpose cumulative patches.
-
-Exclude `.comment` files from public assets, broad copy/deployment rules and class-name scanning as needed. Keep compiler directives, linter controls, license headers and tool-significant documentation comments in source. No compiler or bundler is patched by this extension.
-
-## Performance and generated-file cleanup
-
-The implementation is CommonJS JavaScript on Node.js, not Rust. Python 3 is only used to package the local VSIX. There is no Rust toolchain, Cargo workspace, native addon, npm dependency install or bundling step.
-
-The resolver now checks the source revision and target lines before building a full line-fingerprint index. It builds that index only when relocation is needed. The editor caches comments grouped by source line for direct hover lookups, reuses the service's resolved snapshot for unchanged buffers, and skips hash/edit-history tracking when a file has no comments. None of these changes waive revision/target checks or guess ambiguous attachment positions.
-
-Run `npm run benchmark` to create `reports/BENCHMARK.json`. Compare against an extracted old source folder with `npm run benchmark -- --baseline /absolute/path/to/old/source`, which creates `reports/PERFORMANCE-COMPARISON.json`. These are warm synthetic measurements, not complete VS Code/Cursor responsiveness measurements. See PERFORMANCE.md for this build's recorded comparison and remaining work.
-
-Generated build outputs live in `dist/`; reports live in `reports/`. Both are ignored by Git and excluded from the VSIX. A safe cleanup helper also recognizes the old root-level release archives and test/benchmark reports:
-
-```sh
-npm run clean                  # Preview only. Deletes nothing.
-npm run clean -- --apply       # Remove only the previewed artifact categories.
-npm test && npm run package    # Rebuild dist/line-comments-0.1.3.vsix.
-```
-
-This does not remove source code, comments, tests, integration instructions, patch files, arbitrary reports, active lock files, or temporary sidecar writes. Keep both format-v1.js and format-v2.js: the first still reads/writes legacy sidecars. Do not delete detached comments as a performance trick; inspect them with `node src/cli.js check` and reattach or delete them explicitly after review.
-
-Deleting generated reports saves disk space and reduces repository clutter. They were not executed by the extension, so this cleanup is not a runtime speed optimization.
+See [TESTING.md](TESTING.md) for smoke tests and [SECURITY.md](SECURITY.md) for the trust boundaries. Official API references are in [REFERENCES.md](REFERENCES.md).

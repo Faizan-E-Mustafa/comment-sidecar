@@ -1,3 +1,5 @@
+> Historical 0.1.3 synthetic baseline, retained in 0.1.4. No new 0.1.4 comparative speedup is claimed. Re-run the benchmark for current local measurements.
+
 # Line Comments 0.1.3: performance and cleanup
 
 ## Implementation

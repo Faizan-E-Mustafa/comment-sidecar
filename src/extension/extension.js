@@ -6,6 +6,7 @@ const { Store } = require('./store');
 const { DraftProvider } = require('./drafts');
 const { commentMarkdown, diagnosticsFor, markerText } = require('./presentation');
 const { createHighlights } = require('./highlights');
+const { readSettings } = require('./settings');
 const { render } = require('../core/render');
 const service = require('../node/service');
 const { matchingDocuments, hasDirtyDocument } = require('./documents');
@@ -57,26 +58,20 @@ function activate(context) {
       if (!entry) { clearPresentation(uri); return; }
       diagnostics.set(uri, diagnosticsFor(document, entry.results));
       const options = [];
-      const config = vscode.workspace.getConfiguration('lineComments', uri);
-      const markerStyle = config.get('markerStyle', 'label');
-      const show = config.get('showMarkers', true) && markerStyle !== 'off';
-      const highlightStyle = config.get('highlightStyle', 'line');
-      const groups = new Map();
-      if (show) for (const item of entry.results) {
-        if (item.line === null || item.line > document.lineCount) continue;
-        const list = groups.get(item.line) || [];
-        list.push(item); groups.set(item.line, list);
-      }
-      for (const [line, notes] of groups) {
-        const needsReview = notes.some(item => item.status === 'review');
-        options.push({
-          range: document.lineAt(line - 1).range,
-          renderOptions: {
-            after: {
-              contentText: markerText(needsReview, markerStyle),
+      const { showMarkers, markerStyle, highlightStyle } = readSettings(
+        vscode.workspace.getConfiguration('lineComments', uri),
+      );
+      if (showMarkers && markerStyle !== 'off') {
+        for (const [line, notes] of entry.byLine) {
+          if (line < 1 || line > document.lineCount) continue;
+          const needsReview = notes.some(item => item.status === 'review');
+          options.push({
+            range: document.lineAt(line - 1).range,
+            renderOptions: {
+              after: { contentText: markerText(needsReview, markerStyle) },
             },
-          },
-        });
+          });
+        }
       }
       for (const editor of vscode.window.visibleTextEditors) {
         if (editor.document.uri.toString() !== uri.toString()) continue;
@@ -234,9 +229,11 @@ function activate(context) {
         try {
           const entry = await store.get(document);
           if (token.isCancellationRequested || !entry) return undefined;
-          const items = entry.results.filter(item => item.line === position.line + 1);
-          if (!items.length) return undefined;
-          const showMetadata = vscode.workspace.getConfiguration('lineComments', document.uri).get('showHoverMetadata', false);
+          const items = entry.byLine.get(position.line + 1);
+          if (!items?.length) return undefined;
+          const { showHoverMetadata: showMetadata } = readSettings(
+            vscode.workspace.getConfiguration('lineComments', document.uri),
+          );
           return new vscode.Hover(items.map(item => commentMarkdown(item, { showMetadata })), document.lineAt(position.line).range);
         } catch (error) { log(error); return undefined; }
       },

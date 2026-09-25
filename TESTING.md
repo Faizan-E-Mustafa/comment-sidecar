@@ -1,41 +1,45 @@
-# Validation status
+# Verification
 
-## Executed in the build environment
+## Automated commands
 
-106 automated tests pass using Node's built-in test runner on Linux, Node v22.16.0, both normally and with the temporary directory routed through a symlink. Test logs can be written to reports/TEST-RESULTS.txt and reports/TEST-RESULTS-ALIASES.txt; rerun `npm test` and `npm run test:aliases`. JavaScript syntax validation uses `node --check`; the separate example check uses `tsc --noEmit -p examples`.
+```sh
+npm test
+npm run test:aliases
+npm run check
+```
 
-Core coverage: strict independent-hunk parsing/serialization, multiline text, Unicode, CRLF, invalid source additions/deletions, malformed metadata, duplicate IDs, oversized input, empty/last lines, duplicate line ambiguity, uniquely moved windows, provisional attachments, persistent deletion, live UTF-16 edit offsets, multicursor shifts, output line numbering, comments-only mode, explicit character-budget truncation, and a 100-case deterministic insertion loop.
+`npm run verify` runs all three. `npm run release` verifies first, then builds a matching VSIX and complete source ZIP and validates their contents. Node.js with npm is sufficient for the JS tests. Python 3.9+ is required for packaging. The test command supplies filenames explicitly rather than relying on a shell glob.
 
-Filesystem/service coverage: create/update/remove, exact target and revision guards, concurrent cooperating writers, stale writes, orphaned sidecars, explicit reattachment, root traversal, source/sidecar symlinks, escaping directory symlinks, binary input, excluded directories and malformed-sidecar preservation. Source bytes are checked unchanged after comment operations.
+## What the suites cover
 
-CLI tests spawn a real Node subprocess against temporary repositories. MCP tests cover protocol handler initialization, discovery, read-only mode, schema validation, actual sidecar writes and a real stdio subprocess exchange. Stdout is checked to contain only protocol messages. These are not tests against the Cursor or VS Code MCP client.
+Core: both sidecar versions, strict parsing, invalid patches, multiline/Unicode/CRLF handling, exact and moved contexts, ambiguity, review/detachment, live UTF-16 edits, multicursor changes, real source line numbering, comments-only output, and explicit comment-budget truncation.
 
-Editor tests load the actual extension code against a **mocked VS Code API** with a real filesystem. They cover command/provider registration, multiline draft persistence, untrusted hover text, live movement and source-save rebasing, recent undo restoration, trust/dirty-source guards, stale draft rejection, and sibling rename edits. Additional regression tests cover quiet hover defaults, optional metadata, review warnings, removal of duplicate decoration hovers, aliased workspace/source paths, canonical watcher invalidation and dirty-source/sidecar protection through aliases. They are not Electron/desktop extension-host tests.
+Service/filesystem: source-preserving CRUD, source and sidecar revision guards, target-text checks, cooperating concurrent writers, malformed-sidecar preservation, workspace traversal and directory-alias protections, dirty documents, symlink exclusions, and explicit conversion/reattachment.
 
-The original 0.1.0 suite passed 55/55 in the normal Linux environment. Running its eight editor tests with an aliased TMPDIR reproduced the exact five reported failures (four workspace-containment errors and the missed dirty-source rejection). The production path resolution and editor-document identity checks were fixed; tests were not skipped and workspace protections were not removed. The 0.1.1 source distribution included the original REGRESSION-REPRODUCTION.txt; the clean source distribution does not retain historical generated logs. This reproduces the failure mechanism on Linux, not a macOS desktop test.
+CLI and MCP: real subprocess reads and writes, protocol initialization, tool discovery, read-only default, validation, stale requests, stdio output discipline, and version agreement with the extension manifest. These tests do not run a third-party agent client.
 
-reports/BENCHMARK.json records warm core-function and isolated store-operation microbenchmarks for 1000 lines/20 notes and 10,000 lines/200 notes. They are not UI latency, cold start, monorepo watcher, memory-pressure, or model-token measurements. The recorded timestamp comes from the execution environment's clock. Re-run `npm run benchmark` on your own machine for a comparable local baseline.
+Editor: actual extension code loaded against a **mocked VS Code API**, using a real temporary filesystem. Coverage includes command registration, multiline drafts, hover escaping, live line tracking and undo, saved rebasing, file renames, aliased paths, theme decorations, no duplicate decoration hovers, labeled/icon/off markers, review indicators, and cached per-line lookups.
 
-The local VSIX archive is checked for ZIP integrity, parseable manifest XML, and the declared extension entry point. Installation/signature/marketplace checks were not run by a real desktop client.
+Consolidation regressions: manifest-derived defaults, preserved explicit `showMarkers:false`, invalid-value fallback, manifest/CLI/MCP version consistency, the original labeled circle default, no duplicate hover contribution, and one marker for multiple notes on a line.
 
-## Not executed here
+The alias runner repeats the entire suite with TMPDIR/TEMP/TMP routed through a directory symlink. This reproduces macOS-style path alias conditions on Linux; it is **not** a macOS desktop test.
 
-Real VS Code/Cursor desktop launch, macOS/Windows tests, enterprise signed-extension policy tests, live Cursor agent adoption, VS Code MCP client adoption, real model-token accounting, package publication, stress/fuzz testing, remote filesystem-provider integration and hostile-process filesystem race testing.
+## Release verification
 
-V0.1.2 adds strict v2-format and fingerprint-anchoring coverage, legacy conversion and compatibility checks, guarded conversion in a real CLI subprocess, new-file v2 writes and source preservation, line/underline/off decoration checks, deduplication, warning colors, stale-decoration cleanup, and confirmation/cancellation of editor conversion. The earlier v1 core tests remain and all ordinary service/MCP tests now exercise new-file v2 writes.
+The release builder checks both ZIP CRCs; source archive completeness; the declared extension entry point; VSIX XML and package version agreement; byte equality of the source tree and its ZIP; byte equality of runtime/media/integration files between source and VSIX; local require() targets; and exclusion of tests, scripts, examples, dist and reports from the installed package. It emits `dist/SHA256SUMS`.
 
-## Desktop smoke test
+The current release was tested in the build environment with Node v22.16.0 on Linux. Recorded command output is in the accompanying validation artifacts, not embedded as historical logs in source. A fresh extraction and rebuild are checked separately so working-directory leftovers are not prerequisites.
 
-1. Install the local VSIX and open examples/app.tsx. Use the new examples folder with fixture.d.ts and tsconfig.json. Verify lines 4 and 5 have a subtle tint/left edge, switch highlightStyle between line/underline/off, and hover them: each comment should appear once, without an attachment heading, ID or revision sentence. Verify `◌ comment` appears at the end of each annotated line and no source characters were inserted. Switch markerStyle between label/icon/off; icon uses `◌`. An existing showMarkers:false setting must be set to true to show markers. Real language errors still appear in native hovers.
-2. Add a multiline comment at a chosen line, save its side editor, and inspect the generated sibling patch. Verify a newly created patch contains `@anchor` fingerprints but no copied source context. Edit/delete it through commands. Convert a backed-up v1 fixture with Remove Copied Code from .comment, verifying cancellation first and successful conversion second. Check comments still attach.
-3. Insert lines above an annotation, save source, and verify both hover and the sidecar move. Modify the target and verify review; delete/split it and verify detachment. Reattach explicitly and mark reviewed only after checking meaning.
-4. Exercise undo/redo, save/reload and branch switches. Rename a source through Explorer and check its sibling; repeat an external rename and confirm orphan detection.
-5. Open a dirty sidecar and edit the source; verify auto-sync refuses to overwrite it and explains the problem in Output. Test concurrent CLI writes while editing a note draft.
-6. In Cursor, configure the local MCP server and one rule, start a fresh Agent conversation and ask it to inspect a specific region. Verify it calls the combined reader, preserves real line numbers, follows documented constraints and checks notes after edits. Do not infer Tab/inline-edit support from Agent success.
-7. Repeat with a large source file and multiple workspace roots, and inspect extension-host CPU/memory. Confirm source compilation is unchanged and sidecars are excluded from production asset copying.
+## What these tests do not establish
 
-## 0.1.3 regression additions
+They do not establish correct rendering inside a real VS Code/Cursor desktop, macOS/Windows behavior, enterprise signature acceptance, monorepo responsiveness, semantic correctness of annotations, automatic use by agents, actual token savings, hostile-process filesystem safety, or Marketplace publication. No desktop launch is claimed.
 
-Tests check same-revision duplicate positions, incorrect target coordinates despite matching revisions, mixed old/current/detached notes, identical normalized revision hashing, labeled/icon/off markers with persistent review indication, direct cached hover lookups, index updates through insert/delete/undo, resolved-snapshot reuse, empty annotation histories, preview-first cleanup, preserved source/sidecars/locks, and refusal to follow artifact symlinks. Performance assertions are behavioral; tests do not use flaky timing thresholds.
+## Desktop smoke checklist
 
-The benchmark has an optional baseline path. It tests v1 and v2 with the same 1,000/20 and 10,000/200 synthetic line/note counts. The no-comment editing benchmark uses Store.changed with a minimal document fixture, not a real editor. Native CPU/GPU repaint costs, extension activation, watcher load across a monorepo, and model tokens remain unmeasured.
+1. Install the VSIX and reload the editor. Open the new examples folder. Confirm lines 4/5 show `◌ comment`, subtle tint/left edge, and one copy of each note in hover. Source bytes must not change.
+2. Set `markerStyle` to `icon`, then `off`, then `label`. Check `showMarkers:false` hides only markers; restore it to true. Try `highlightStyle` line/underline/off and metadata opt-in. Native TypeScript and third-party hover content must not be suppressed.
+3. Add/edit/delete a multiline comment through the side draft. New `.comment` files contain fingerprint metadata, not copied source. A pre-existing v1 file remains v1 until explicitly converted; test cancellation and confirmed conversion with a backup.
+4. Insert lines above the target, edit it, delete it, undo, save and reopen. Confirm movement/review/detachment as appropriate. Reattach only after identifying the intended line; mark reviewed only after checking the explanation.
+5. Make the source or sidecar dirty and try to write a draft. Confirm that a conflicting or stale request fails without overwriting the files. Test source renames in Explorer and an external rename followed by a workspace check.
+6. Configure the CLI or MCP path from this release, start a fresh agent conversation, and verify the actual tool call reads source with its comments. Re-check after edits. Agent success does not establish Tab/inline-completion integration.
+7. Repeat with a larger file, multiple workspace roots, and branch changes; inspect actual extension-host CPU/memory. The included synthetic benchmarks are not UI responsiveness measurements.

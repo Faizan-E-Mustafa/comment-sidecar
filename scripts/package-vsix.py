@@ -7,7 +7,7 @@ import zipfile
 import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
-pkg = json.loads((root / 'package.json').read_text())
+pkg = json.loads((root / 'package.json').read_text(encoding='utf-8'))
 (root / 'dist').mkdir(exist_ok=True)
 output = root / 'dist' / f"{pkg['name']}-{pkg['version']}.vsix"
 manifest = f'''<?xml version="1.0" encoding="utf-8"?>
@@ -56,10 +56,21 @@ for folder in ['src', 'media', 'integration']:
     files.extend(path for path in (root / folder).rglob('*') if path.is_file())
 files.extend(root / name for name in ['FORMAT.md', 'SECURITY.md', 'CHANGELOG.md'] if (root / name).exists())
 with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
-    archive.writestr('extension.vsixmanifest', manifest)
-    archive.writestr('[Content_Types].xml', content_types)
-    for file in files:
-        archive.write(file, f"extension/{file.relative_to(root).as_posix()}")
+    for name, value in [('extension.vsixmanifest', manifest), ('[Content_Types].xml', content_types)]:
+        info = zipfile.ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.create_system = 3
+        info.external_attr = 0o100644 << 16
+        archive.writestr(info, value)
+    for file in sorted(files):
+        if file.is_symlink():
+            raise RuntimeError(f'Refusing a symlink in the release: {file}')
+        data = file.read_bytes()
+        info = zipfile.ZipInfo(f"extension/{file.relative_to(root).as_posix()}", date_time=(1980, 1, 1, 0, 0, 0))
+        info.compress_type = zipfile.ZIP_DEFLATED
+        info.create_system = 3
+        info.external_attr = (0o100755 if data.startswith(b'#!') else 0o100644) << 16
+        archive.writestr(info, data)
 with zipfile.ZipFile(output) as archive:
     assert archive.testzip() is None
     stored = json.loads(archive.read('extension/package.json'))
