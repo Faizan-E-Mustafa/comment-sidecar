@@ -4,6 +4,7 @@ const { randomUUID } = require('node:crypto');
 const path = require('node:path');
 const { write } = require('../node/service');
 const { assertComment } = require('../core/format');
+const { hasDirtyDocument } = require('./documents');
 
 class DraftProvider {
   constructor(onSaved) {
@@ -34,9 +35,7 @@ class DraftProvider {
     if (content.byteLength > 64000) throw new Error('Comment is too large.');
     const text = new TextDecoder('utf-8', { fatal: true }).decode(content);
     assertComment(text);
-    const sourceUri = vscode.Uri.file(entry.snapshot.sourcePath).toString();
-    const sidecarUri = vscode.Uri.file(entry.snapshot.sidecarPath).toString();
-    if (vscode.workspace.textDocuments.some(doc => [sourceUri, sidecarUri].includes(doc.uri.toString()) && doc.isDirty)) {
+    if (await hasDirtyDocument([entry.snapshot.sourcePath, entry.snapshot.sidecarPath])) {
       throw new Error('Save the source and sidecar before saving this comment.');
     }
     const result = await write(entry.snapshot.root, entry.snapshot.sourcePath, {
@@ -47,7 +46,7 @@ class DraftProvider {
     entry.id = result.id; entry.text = text; entry.time = Date.now();
     entry.snapshot.sourceHash = result.source; entry.snapshot.sidecarHash = result.sidecar;
     this.events.fire([{ type: vscode.FileChangeType.Changed, uri }]);
-    this.onSaved(vscode.Uri.file(entry.snapshot.sourcePath));
+    await this.onSaved(vscode.Uri.file(entry.snapshot.sourcePath));
   }
   watch() { return new vscode.Disposable(() => {}); }
   readDirectory() { return []; }

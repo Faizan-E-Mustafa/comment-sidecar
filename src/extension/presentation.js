@@ -1,14 +1,18 @@
 'use strict';
 const vscode = require('vscode');
 
-function commentMarkdown(result) {
+function commentMarkdown(result, options = {}) {
   const markdown = new vscode.MarkdownString();
   markdown.isTrusted = false;
   markdown.supportHtml = false;
-  markdown.appendMarkdown(`**Line comment · ${result.status}**\n\n`);
   markdown.appendText(result.note.text);
-  markdown.appendMarkdown('\n\n---\n');
-  markdown.appendText(`${result.note.id} · ${result.reason}`);
+  if (result.status === 'review') {
+    markdown.appendMarkdown('\n\n**Needs review**');
+  }
+  if (options.showMetadata) {
+    markdown.appendMarkdown('\n\n---\n');
+    markdown.appendText(`${result.note.id} · ${result.status} · ${result.reason}`);
+  }
   return markdown;
 }
 function diagnosticsFor(document, results) {

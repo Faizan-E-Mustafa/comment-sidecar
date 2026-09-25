@@ -42,6 +42,7 @@ content_types = '''<?xml version="1.0" encoding="utf-8"?>
   <Default Extension="mdc" ContentType="text/plain" />
   <Default Extension="txt" ContentType="text/plain" />
   <Default Extension="comment" ContentType="text/plain" />
+  <Default Extension="ts" ContentType="text/plain" />
   <Default Extension="tsx" ContentType="text/plain" />
   <Default Extension="vsixmanifest" ContentType="text/xml" />
   <Override PartName="/extension/LICENSE" ContentType="text/plain" />
@@ -52,7 +53,7 @@ ET.fromstring(content_types)
 files = [root / 'package.json', root / 'README.md', root / 'LICENSE']
 for folder in ['src', 'media', 'integration', 'examples']:
     files.extend(path for path in (root / folder).rglob('*') if path.is_file())
-files.extend(root / name for name in ['FORMAT.md', 'SECURITY.md', 'TESTING.md', 'ROADMAP.md', 'REFERENCES.md'] if (root / name).exists())
+files.extend(root / name for name in ['FORMAT.md', 'SECURITY.md', 'TESTING.md', 'ROADMAP.md', 'REFERENCES.md', 'CHANGELOG.md'] if (root / name).exists())
 with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
     archive.writestr('extension.vsixmanifest', manifest)
     archive.writestr('[Content_Types].xml', content_types)

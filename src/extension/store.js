@@ -5,6 +5,7 @@ const { sourceHash } = require('../core/text');
 const { resolveNotes } = require('../core/anchors');
 const { trackEdits } = require('../core/edits');
 const { MAX_FILE_BYTES } = require('../node/workspace');
+const { hasDirtyDocument } = require('./documents');
 
 class Store {
   constructor(onUpdate, onError) {
@@ -59,12 +60,11 @@ class Store {
   async saved(document) {
     const key = document.uri.toString(), entry = this.cache.get(key);
     if (!entry || !entry.snapshot.notes.length || !vscode.workspace.isTrusted || this.saving.has(key)) return;
-    const sidecar = vscode.Uri.file(entry.snapshot.sidecarPath);
-    if (vscode.workspace.textDocuments.some(doc => doc.uri.toString() === sidecar.toString() && doc.isDirty)) {
-      this.onError(new Error('Sidecar has unsaved edits. Save it before syncing tracked comments.')); return;
-    }
     this.saving.add(key);
     try {
+      if (await hasDirtyDocument([entry.snapshot.sidecarPath])) {
+        throw new Error('Sidecar has unsaved edits. Save it before syncing tracked comments.');
+      }
       const source = entry.source, version = entry.version;
       await saveTracked(entry.snapshot, source, entry.results);
       const snapshot = await load(entry.snapshot.root, entry.snapshot.sourcePath);

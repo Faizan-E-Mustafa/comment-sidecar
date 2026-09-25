@@ -11,12 +11,32 @@ function inside(root, file) {
   return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
 }
 async function resolveSource(root, file) {
-  const canonicalRoot = await fs.realpath(root);
-  const absolute = path.resolve(canonicalRoot, file);
-  if (!inside(canonicalRoot, absolute) || absolute === canonicalRoot) throw new Error('File must be inside the selected workspace.');
-  const relative = path.relative(canonicalRoot, absolute);
-  if (relative.split(path.sep).some(part => IGNORED.has(part))) throw new Error('Generated, dependency, and VCS directories are excluded.');
-  if (absolute.endsWith('.comment') || /[\r\n\0]/.test(absolute)) throw new Error('Select a source file, not a sidecar.');
+  const requestedRoot = path.resolve(root);
+  const canonicalRoot = await fs.realpath(requestedRoot);
+  const requested = path.resolve(requestedRoot, file);
+  const inRequestedRoot = inside(requestedRoot, requested);
+  const inCanonicalRoot = inside(canonicalRoot, requested);
+  if (requested === requestedRoot || requested === canonicalRoot || (!path.isAbsolute(file) && !inRequestedRoot)) {
+    throw new Error('File must be inside the selected workspace.');
+  }
+  if (requested.endsWith('.comment') || /[\r\n\0]/.test(requested)) throw new Error('Select a source file, not a sidecar.');
+  const lexicalRoot = inRequestedRoot ? requestedRoot : inCanonicalRoot ? canonicalRoot : null;
+  if (lexicalRoot && path.relative(lexicalRoot, requested).split(path.sep).some(part => IGNORED.has(part))) {
+    throw new Error('Generated, dependency, and VCS directories are excluded.');
+  }
+  let parent;
+  try { parent = await fs.realpath(path.dirname(requested)); }
+  catch (error) {
+    if (!lexicalRoot) throw new Error('File must be inside the selected workspace.');
+    throw error;
+  }
+  const absolute = path.join(parent, path.basename(requested));
+  if (!inside(canonicalRoot, absolute) || absolute === canonicalRoot) {
+    throw new Error(lexicalRoot ? 'Symlinks may not escape the workspace.' : 'File must be inside the selected workspace.');
+  }
+  if (path.relative(canonicalRoot, absolute).split(path.sep).some(part => IGNORED.has(part))) {
+    throw new Error('Generated, dependency, and VCS directories are excluded.');
+  }
   const stat = await fs.lstat(absolute);
   if (stat.isSymbolicLink() || !stat.isFile()) throw new Error('Source must be a regular, non-symlink file.');
   const real = await fs.realpath(absolute);

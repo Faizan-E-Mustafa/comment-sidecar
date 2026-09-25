@@ -2,54 +2,158 @@
   "name": "line-comments",
   "displayName": "Line Comments",
   "description": "Per-line comments in sibling .comment patches. Hover context, line tracking, review warnings, and agent CLI/MCP access without changing source.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "line-comments-local",
   "license": "MIT",
-  "engines": { "vscode": "^1.85.0", "node": ">=18.17.0" },
-  "categories": ["Other"],
-  "keywords": ["comments", "context", "diff", "agents", "mcp"],
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=18.17.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "comments",
+    "context",
+    "diff",
+    "agents",
+    "mcp"
+  ],
   "main": "./src/extension/extension.js",
-  "bin": { "lc": "./src/cli.js", "line-comments-mcp": "./src/mcp.js" },
-  "activationEvents": ["onStartupFinished"],
-  "extensionKind": ["workspace"],
+  "bin": {
+    "lc": "./src/cli.js",
+    "line-comments-mcp": "./src/mcp.js"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "extensionKind": [
+    "workspace"
+  ],
   "capabilities": {
-    "untrustedWorkspaces": { "supported": "limited", "description": "Read-only hover works. Comment creation, editing and tracked sidecar writes require workspace trust." },
+    "untrustedWorkspaces": {
+      "supported": "limited",
+      "description": "Read-only hover works. Comment creation, editing and tracked sidecar writes require workspace trust."
+    },
     "virtualWorkspaces": false
   },
   "scripts": {
     "test": "node --test test/*.test.js",
     "check": "node scripts/check-syntax.js",
     "benchmark": "node scripts/benchmark.js",
-    "package": "python3 scripts/package-vsix.py"
+    "package": "python3 scripts/package-vsix.py",
+    "test:aliases": "node scripts/test-aliases.js"
   },
   "contributes": {
-    "languages": [{ "id": "line-comments-patch", "aliases": ["Line Comment Patch"], "extensions": [".comment"] }],
-    "grammars": [{ "language": "line-comments-patch", "scopeName": "source.line-comments", "path": "./media/line-comments.tmLanguage.json" }],
+    "languages": [
+      {
+        "id": "line-comments-patch",
+        "aliases": [
+          "Line Comment Patch"
+        ],
+        "extensions": [
+          ".comment"
+        ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "line-comments-patch",
+        "scopeName": "source.line-comments",
+        "path": "./media/line-comments.tmLanguage.json"
+      }
+    ],
     "commands": [
-      { "command": "lineComments.add", "title": "Line Comments: Add Comment at Line" },
-      { "command": "lineComments.edit", "title": "Line Comments: Edit Comment" },
-      { "command": "lineComments.remove", "title": "Line Comments: Delete Comment" },
-      { "command": "lineComments.review", "title": "Line Comments: Mark Comment Reviewed" },
-      { "command": "lineComments.reanchor", "title": "Line Comments: Reattach Comment to This Line" },
-      { "command": "lineComments.openSidecar", "title": "Line Comments: Open .comment Patch" },
-      { "command": "lineComments.preview", "title": "Line Comments: Open Annotated Preview" },
-      { "command": "lineComments.copy", "title": "Line Comments: Copy Annotated Selection" },
-      { "command": "lineComments.list", "title": "Line Comments: List File Comments" },
-      { "command": "lineComments.check", "title": "Line Comments: Check Workspace" },
-      { "command": "lineComments.copyRules", "title": "Line Comments: Copy Agent Instructions" },
-      { "command": "lineComments.copyMcp", "title": "Line Comments: Copy Cursor MCP Configuration" }
+      {
+        "command": "lineComments.add",
+        "title": "Line Comments: Add Comment at Line"
+      },
+      {
+        "command": "lineComments.edit",
+        "title": "Line Comments: Edit Comment"
+      },
+      {
+        "command": "lineComments.remove",
+        "title": "Line Comments: Delete Comment"
+      },
+      {
+        "command": "lineComments.review",
+        "title": "Line Comments: Mark Comment Reviewed"
+      },
+      {
+        "command": "lineComments.reanchor",
+        "title": "Line Comments: Reattach Comment to This Line"
+      },
+      {
+        "command": "lineComments.openSidecar",
+        "title": "Line Comments: Open .comment Patch"
+      },
+      {
+        "command": "lineComments.preview",
+        "title": "Line Comments: Open Annotated Preview"
+      },
+      {
+        "command": "lineComments.copy",
+        "title": "Line Comments: Copy Annotated Selection"
+      },
+      {
+        "command": "lineComments.list",
+        "title": "Line Comments: List File Comments"
+      },
+      {
+        "command": "lineComments.check",
+        "title": "Line Comments: Check Workspace"
+      },
+      {
+        "command": "lineComments.copyRules",
+        "title": "Line Comments: Copy Agent Instructions"
+      },
+      {
+        "command": "lineComments.copyMcp",
+        "title": "Line Comments: Copy Cursor MCP Configuration"
+      }
     ],
     "menus": {
       "editor/context": [
-        { "command": "lineComments.add", "when": "resourceScheme == file && isWorkspaceTrusted", "group": "lineComments@1" },
-        { "command": "lineComments.edit", "when": "resourceScheme == file && isWorkspaceTrusted", "group": "lineComments@2" },
-        { "command": "lineComments.preview", "when": "resourceScheme == file", "group": "lineComments@3" }
+        {
+          "command": "lineComments.add",
+          "when": "resourceScheme == file && isWorkspaceTrusted",
+          "group": "lineComments@1"
+        },
+        {
+          "command": "lineComments.edit",
+          "when": "resourceScheme == file && isWorkspaceTrusted",
+          "group": "lineComments@2"
+        },
+        {
+          "command": "lineComments.preview",
+          "when": "resourceScheme == file",
+          "group": "lineComments@3"
+        }
       ]
     },
-    "keybindings": [{ "command": "lineComments.add", "key": "ctrl+alt+;", "mac": "cmd+alt+;", "when": "editorTextFocus && resourceScheme == file && isWorkspaceTrusted" }],
+    "keybindings": [
+      {
+        "command": "lineComments.add",
+        "key": "ctrl+alt+;",
+        "mac": "cmd+alt+;",
+        "when": "editorTextFocus && resourceScheme == file && isWorkspaceTrusted"
+      }
+    ],
     "configuration": {
       "title": "Line Comments",
-      "properties": { "lineComments.showMarkers": { "type": "boolean", "default": true, "description": "Show a subtle end-of-line marker for external comments. Hover works with markers disabled." } }
+      "properties": {
+        "lineComments.showMarkers": {
+          "type": "boolean",
+          "default": false,
+          "description": "Show a small dot on annotated lines. Off by default; hovering the source line still shows its comments."
+        },
+        "lineComments.showHoverMetadata": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include annotation IDs, attachment status and revision details in hovers. Off by default; review warnings remain visible."
+        }
+      }
     }
   }
 }

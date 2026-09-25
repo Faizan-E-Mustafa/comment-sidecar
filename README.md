@@ -1,4 +1,4 @@
-# Line Comments · 0.1.0
+# Line Comments · 0.1.1
 
 Per-line explanatory comments stored in sibling `.comment` patches, projected onto the original code in VS Code. Includes a CLI and optional local MCP server for agents.
 
@@ -13,15 +13,15 @@ No cloud service, API key, model calls, build transformation, external runtime p
 
 ## Try the extension
 
-Install the supplied `line-comments-0.1.0.vsix` through **Extensions → … → Install from VSIX**. In VS Code, the shell equivalent is:
+Install the supplied `line-comments-0.1.1.vsix` through **Extensions → … → Install from VSIX**. In VS Code, the shell equivalent is:
 
 ```sh
-code --install-extension line-comments-0.1.0.vsix
+code --install-extension line-comments-0.1.1.vsix
 ```
 
 In Cursor, use its Install from VSIX command where available. This extension uses the stable VS Code API with engine floor 1.85, but Cursor is a separate test target. Enterprise policy may prevent unsigned local VSIX installation. This is an unsigned local package; no Marketplace or Open VSX release has been published.
 
-Open the `examples` folder and `app.tsx`. Hover lines 4 and 5. The example is an annotation fixture, not a standalone compiling React application: `useSession` and its components are intentionally undefined.
+Open the `examples` folder and `app.tsx`. Hover lines 4 and 5. The example now includes `fixture.d.ts` and a local `tsconfig.json` using JSX preserve mode. It type-checks without React dependencies; it remains an editor fixture, not an executable React application. Use the **new examples folder**, since installing a VSIX does not update a previously extracted workspace.
 
 To run from source instead of installing the package, open this repository in VS Code and use the included **Run Line Comments Extension** launch configuration (F5). No dependency installation or build step is required.
 
@@ -33,7 +33,22 @@ The source and existing sidecar must be saved before creating or editing a note.
 
 Commands also cover editing, deleting, listing, explicitly reviewing, reattaching to the current line, opening the raw patch, opening a read-only annotated preview, copying an annotated selection, checking the workspace, copying agent instructions, and copying Cursor MCP configuration.
 
-The optional `lineComments.showMarkers` setting controls the subtle end-of-line label. Hover remains available when labels are disabled.
+Healthy comments show only their text on hover, once. Inline labels and normal-state status-bar counts are off by default. Review warnings remain visible; genuine language diagnostics are not disabled.
+
+```json
+{
+  "lineComments.showMarkers": false,
+  "lineComments.showHoverMetadata": false
+}
+```
+
+`showMarkers: true` opts into a small dot (or `!` for review), not the old `comment` label. `showHoverMetadata: true` restores IDs, status and reasons for debugging. Do not turn off `editor.hover.enabled`: that disables comment hovers too.
+
+### Updating from 0.1.0
+
+Install the new VSIX over the existing extension and run **Developer: Reload Window**. Extract the new source archive into a separate folder for tests and the updated example. No `.comment` format migration is required. The update does not overwrite comments in existing workspaces.
+
+The CLI/MCP still return revision guards for safe writes. Editor-only display settings do not alter the agent protocol or strip those guards.
 
 ### Movement and review
 
@@ -126,6 +141,7 @@ test/          core, real filesystem/CLI/MCP and mocked editor tests
 
 ```sh
 npm test
+npm run test:aliases
 npm run check
 npm run benchmark
 npm run package

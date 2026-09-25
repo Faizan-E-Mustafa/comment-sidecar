@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const service = require('./node/service');
 
-const HELP = `Line Comments 0.1.0 — line-level external comments, without modifying source.
+const HELP = `Line Comments 0.1.1 — line-level external comments, without modifying source.
 
 lc read FILE [--start N --end N] [--mode annotated|comments|code] [--comment-budget N] [--json]
 lc add FILE --line N --text TEXT --expected-text TEXT --source-hash HASH --sidecar-hash HASH

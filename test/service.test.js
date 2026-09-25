@@ -170,3 +170,38 @@ test('MCP stdio subprocess accepts newline-delimited JSON and returns no stdout 
   assert.equal(messages.length, 3);
   assert.match(messages[2].result.content[0].text, /if \(!ready\) wait/);
 });
+
+async function aliasFixture(t) {
+  const parent = await fixture(t);
+  const real = path.join(parent, 'workspace');
+  await fs.mkdir(real);
+  await fs.writeFile(path.join(real, 'app.ts'), SOURCE);
+  const alias = path.join(parent, 'alias');
+  await fs.symlink(real, alias, process.platform === 'win32' ? 'junction' : 'dir');
+  return { real: await fs.realpath(real), alias };
+}
+test('canonical and aliased absolute source paths resolve inside the same workspace', async t => {
+  const { real, alias } = await aliasFixture(t);
+  for (const root of [real, alias]) {
+    for (const file of ['app.ts', path.join(real, 'app.ts'), path.join(alias, 'app.ts')]) {
+      const snapshot = await service.load(root, file);
+      assert.equal(snapshot.sourcePath, path.join(real, 'app.ts'));
+      assert.equal(snapshot.file, 'app.ts');
+    }
+  }
+});
+test('aliased workspace still rejects traversal, escaping directory links and source-file links', async t => {
+  const { real, alias } = await aliasFixture(t);
+  await assert.rejects(() => resolveSource(alias, '../app.ts'), /inside/);
+  await fs.symlink(path.join(real, 'app.ts'), path.join(real, 'linked.ts'));
+  await assert.rejects(() => service.load(alias, 'linked.ts'), /non-symlink/);
+  await fs.symlink(path.dirname(real), path.join(real, 'outside'), process.platform === 'win32' ? 'junction' : 'dir');
+  await assert.rejects(() => service.load(alias, 'outside/app.ts'), /escape/);
+});
+test('directory aliases cannot bypass excluded dependency directories', async t => {
+  const { real, alias } = await aliasFixture(t);
+  await fs.mkdir(path.join(real, 'node_modules'));
+  await fs.writeFile(path.join(real, 'node_modules', 'module.js'), 'export const x = 1;');
+  await fs.symlink(path.join(real, 'node_modules'), path.join(real, 'friendly'), process.platform === 'win32' ? 'junction' : 'dir');
+  await assert.rejects(() => service.load(alias, 'friendly/module.js'), /excluded/);
+});

@@ -7,6 +7,7 @@ const { DraftProvider } = require('./drafts');
 const { commentMarkdown, diagnosticsFor } = require('./presentation');
 const { render } = require('../core/render');
 const service = require('../node/service');
+const { matchingDocuments, hasDirtyDocument } = require('./documents');
 
 function activate(context) {
   const output = vscode.window.createOutputChannel('Line Comments');
@@ -14,7 +15,7 @@ function activate(context) {
   const previewEvents = new vscode.EventEmitter();
   const decoration = vscode.window.createTextEditorDecorationType({
     isWholeLine: true,
-    after: { margin: '0 0 0 2em', color: new vscode.ThemeColor('editorCodeLens.foreground') },
+    after: { margin: '0 0 0 1em', color: new vscode.ThemeColor('editorCodeLens.foreground') },
   });
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 30);
   status.command = 'lineComments.list';
@@ -28,7 +29,14 @@ function activate(context) {
     previewEvents.fire(previewUri(uri));
   }
   store = new Store(updated, log);
-  const drafts = new DraftProvider(uri => { store.invalidate(uri); updated(uri); });
+  async function invalidateSource(uri) {
+    const documents = await matchingDocuments([uri.fsPath]);
+    for (const document of documents) {
+      store.invalidate(document.uri);
+      updated(document.uri);
+    }
+  }
+  const drafts = new DraftProvider(invalidateSource);
   const previewUri = uri => vscode.Uri.from({ scheme: 'line-comments-preview', path: `/${path.basename(uri.fsPath)}.txt`, query: encodeURIComponent(uri.toString()) });
   async function refresh(uri) {
     const document = vscode.workspace.textDocuments.find(doc => doc.uri.toString() === uri.toString());
@@ -38,7 +46,7 @@ function activate(context) {
       if (!entry) return;
       diagnostics.set(uri, diagnosticsFor(document, entry.results));
       const options = [];
-      const show = vscode.workspace.getConfiguration('lineComments', uri).get('showMarkers', true);
+      const show = vscode.workspace.getConfiguration('lineComments', uri).get('showMarkers', false);
       const groups = new Map();
       if (show) for (const item of entry.results) {
         if (item.line === null || item.line > document.lineCount) continue;
@@ -47,13 +55,14 @@ function activate(context) {
       }
       for (const [line, notes] of groups) {
         const needsReview = notes.some(item => item.status === 'review');
-        options.push({ range: document.lineAt(line - 1).range, renderOptions: { after: { contentText: needsReview ? '◌ review comment' : `◌ ${notes.length > 1 ? `${notes.length} comments` : 'comment'}` } }, hoverMessage: notes.map(commentMarkdown) });
+        options.push({ range: document.lineAt(line - 1).range, renderOptions: { after: { contentText: needsReview ? '!' : '·' } } });
       }
       for (const editor of vscode.window.visibleTextEditors) if (editor.document.uri.toString() === uri.toString()) editor.setDecorations(decoration, options);
       if (vscode.window.activeTextEditor?.document.uri.toString() !== uri.toString()) return;
       if (!entry.results.length) { status.hide(); return; }
       const pending = entry.results.filter(item => ['review', 'ambiguous', 'detached'].includes(item.status)).length;
-      status.text = `$(comment) ${entry.results.length}${pending ? ` · ${pending} review` : ''}`;
+      if (!pending) { status.hide(); return; }
+      status.text = `$(comment) ${pending} to review`;
       status.tooltip = 'Line Comments: inspect external comments'; status.show();
     } catch (error) { log(error); }
   }
@@ -64,7 +73,7 @@ function activate(context) {
     if (requireClean && editor.document.isDirty) throw new Error('Save the source before adding or changing a comment.');
     const root = vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
     const sidecarPath = `${editor.document.uri.fsPath}.comment`;
-    if (requireClean && vscode.workspace.textDocuments.some(doc => doc.uri.fsPath === sidecarPath && doc.isDirty)) throw new Error('Save the sidecar before changing comments through commands.');
+    if (requireClean && await hasDirtyDocument([editor.document.uri.fsPath, sidecarPath])) throw new Error('Save the source and sidecar before changing comments through commands.');
     return { editor, root, entry: await store.get(editor.document) };
   }
   async function pick(entry, line, all = false) {
@@ -183,13 +192,17 @@ function activate(context) {
           if (token.isCancellationRequested || !entry) return undefined;
           const items = entry.results.filter(item => item.line === position.line + 1);
           if (!items.length) return undefined;
-          return new vscode.Hover(items.map(commentMarkdown), document.lineAt(position.line).range);
+          const showMetadata = vscode.workspace.getConfiguration('lineComments', document.uri).get('showHoverMetadata', false);
+          return new vscode.Hover(items.map(item => commentMarkdown(item, { showMetadata })), document.lineAt(position.line).range);
         } catch (error) { log(error); return undefined; }
       },
     }),
     vscode.workspace.onDidChangeTextDocument(event => store.changed(event)),
     vscode.workspace.onDidSaveTextDocument(document => {
-      if (document.uri.fsPath.endsWith('.comment')) { const uri = vscode.Uri.file(document.uri.fsPath.slice(0, -8)); store.invalidate(uri); updated(uri); return; }
+      if (document.uri.scheme === 'file' && document.uri.fsPath.endsWith('.comment')) {
+        void invalidateSource(vscode.Uri.file(document.uri.fsPath.slice(0, -8))).catch(log);
+        return;
+      }
       void store.saved(document);
     }),
     vscode.workspace.onDidCloseTextDocument(document => { store.close(document); drafts.close(document.uri); diagnostics.delete(document.uri); }),
@@ -215,10 +228,10 @@ function activate(context) {
     }),
   );
   const watcher = vscode.workspace.createFileSystemWatcher('**/*.comment');
-  const changedSidecar = uri => { const source = vscode.Uri.file(uri.fsPath.slice(0, -8)); store.invalidate(source); updated(source); };
+  const changedSidecar = uri => invalidateSource(vscode.Uri.file(uri.fsPath.slice(0, -8))).catch(log);
   context.subscriptions.push(watcher, watcher.onDidChange(changedSidecar), watcher.onDidCreate(changedSidecar), watcher.onDidDelete(changedSidecar));
   for (const editor of vscode.window.visibleTextEditors) updated(editor.document.uri);
-  return { store, drafts };
+  return { store, drafts, refresh };
 }
 function deactivate() {}
 module.exports = { activate, deactivate };
