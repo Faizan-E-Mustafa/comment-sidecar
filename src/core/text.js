@@ -1,12 +1,13 @@
 'use strict';
 const { createHash } = require('node:crypto');
 
-function linesOf(text) {
+function normalizeText(text) {
   if (typeof text !== 'string' || text.includes('\0')) throw new Error('Expected a UTF-8 text file without NUL bytes.');
-  return text.replace(/\r\n/g, '\n').split('\n');
+  return text.replace(/\r\n/g, '\n');
 }
+function linesOf(text) { return normalizeText(text).split('\n'); }
 function hash(text) { return createHash('sha256').update(text).digest('hex'); }
-function sourceHash(text) { return hash(linesOf(text).join('\n')); }
+function sourceHash(text) { return hash(normalizeText(text)); }
 function lineOffsets(text) {
   const offsets = [0];
   for (let i = 0; i < text.length; i++) if (text[i] === '\n') offsets.push(i + 1);

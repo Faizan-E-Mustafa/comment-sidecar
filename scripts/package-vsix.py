@@ -8,7 +8,8 @@ import xml.etree.ElementTree as ET
 
 root = Path(__file__).resolve().parents[1]
 pkg = json.loads((root / 'package.json').read_text())
-output = root / f"{pkg['name']}-{pkg['version']}.vsix"
+(root / 'dist').mkdir(exist_ok=True)
+output = root / 'dist' / f"{pkg['name']}-{pkg['version']}.vsix"
 manifest = f'''<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
   <Metadata>
@@ -51,9 +52,9 @@ content_types = '''<?xml version="1.0" encoding="utf-8"?>
 ET.fromstring(manifest)
 ET.fromstring(content_types)
 files = [root / 'package.json', root / 'README.md', root / 'LICENSE']
-for folder in ['src', 'media', 'integration', 'examples']:
+for folder in ['src', 'media', 'integration']:
     files.extend(path for path in (root / folder).rglob('*') if path.is_file())
-files.extend(root / name for name in ['FORMAT.md', 'SECURITY.md', 'TESTING.md', 'ROADMAP.md', 'REFERENCES.md', 'CHANGELOG.md'] if (root / name).exists())
+files.extend(root / name for name in ['FORMAT.md', 'SECURITY.md', 'CHANGELOG.md'] if (root / name).exists())
 with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
     archive.writestr('extension.vsixmanifest', manifest)
     archive.writestr('[Content_Types].xml', content_types)

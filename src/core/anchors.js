@@ -6,20 +6,32 @@ const { fingerprintOf, contextHash } = require('./fingerprints');
 function resolveNotes(source, notes) {
   if (!notes.length) return [];
   const lines = linesOf(source), base = sourceHash(source);
-  const byText = new Map();
   const lineHashes = new Map();
-  for (let i = 0; i < lines.length; i++) {
-    let digest = lineHashes.get(lines[i]);
-    if (!digest) { digest = hash(lines[i]); lineHashes.set(lines[i], digest); }
-    const positions = byText.get(digest);
-    if (positions) positions.push(i + 1); else byText.set(digest, [i + 1]);
+  let positionsByHash;
+  function digestOf(text) {
+    if (text === undefined) return undefined;
+    let digest = lineHashes.get(text);
+    if (!digest) { digest = hash(text); lineHashes.set(text, digest); }
+    return digest;
+  }
+  function candidatesFor(target) {
+    if (!positionsByHash) {
+      positionsByHash = new Map();
+      for (let i = 0; i < lines.length; i++) {
+        const digest = digestOf(lines[i]);
+        const positions = positionsByHash.get(digest);
+        if (positions) positions.push(i + 1);
+        else positionsByHash.set(digest, [i + 1]);
+      }
+    }
+    return positionsByHash.get(target) || [];
   }
   return notes.map(note => {
     const anchor = fingerprintOf(note);
     const result = (line, status, reason) => ({ note, line, status, reason });
     if (note.state === 'detached') return result(null, 'detached', 'Target was detached by an editor change; reattach explicitly.');
-    if (note.base === base && lineHashes.get(lines[note.line - 1]) === anchor.target) return result(note.line, note.state, 'Source matches the recorded revision.');
-    const candidates = byText.get(anchor.target) || [];
+    if (note.base === base && digestOf(lines[note.line - 1]) === anchor.target) return result(note.line, note.state, 'Source matches the recorded revision.');
+    const candidates = candidatesFor(anchor.target);
     const exact = candidates.filter(line => {
       const start = line - 1 - anchor.before;
       if (start < 0 || line + anchor.after > lines.length) return false;

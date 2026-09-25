@@ -1,4 +1,4 @@
-# Line Comments · 0.1.2
+# Line Comments · 0.1.3
 
 Per-line explanatory comments stored in sibling `.comment` patches, projected onto the original code in VS Code. Includes a CLI and optional local MCP server for agents.
 
@@ -13,10 +13,10 @@ No cloud service, API key, model calls, build transformation, external runtime p
 
 ## Try the extension
 
-Install the supplied `line-comments-0.1.2.vsix` through **Extensions → … → Install from VSIX**. In VS Code, the shell equivalent is:
+Install the supplied `line-comments-0.1.3.vsix` through **Extensions → … → Install from VSIX**. In VS Code, the shell equivalent is:
 
 ```sh
-code --install-extension line-comments-0.1.2.vsix
+code --install-extension line-comments-0.1.3.vsix
 ```
 
 In Cursor, use its Install from VSIX command where available. This extension uses the stable VS Code API with engine floor 1.85, but Cursor is a separate test target. Enterprise policy may prevent unsigned local VSIX installation. This is an unsigned local package; no Marketplace or Open VSX release has been published.
@@ -33,17 +33,18 @@ The source and existing sidecar must be saved before creating or editing a note.
 
 Commands also cover editing, deleting, listing, explicitly reviewing, reattaching to the current line, opening the raw patch, opening a read-only annotated preview, copying an annotated selection, checking the workspace, copying agent instructions, and copying Cursor MCP configuration.
 
-Healthy comments show only their text on hover, once. Inline labels and normal-state status-bar counts are off by default. Review warnings remain visible; genuine language diagnostics are not disabled.
+Healthy comments show only their text on hover, once. The default end-of-line marker is `◌ comment`; normal-state status-bar counts remain hidden. Review warnings remain visible; genuine language diagnostics are not disabled.
 
 ```json
 {
   "lineComments.highlightStyle": "line",
-  "lineComments.showMarkers": false,
+  "lineComments.showMarkers": true,
+  "lineComments.markerStyle": "label",
   "lineComments.showHoverMetadata": false
 }
 ```
 
-`showMarkers: true` opts into a small dot (or `!` for review), not the old `comment` label. `showHoverMetadata: true` restores IDs, status and reasons for debugging. Do not turn off `editor.hover.enabled`: that disables comment hovers too.
+`markerStyle` is `label` (default: `◌ comment`), `icon` (`◌` alone), or `off`. A review warning appends `!` in either visible style. An existing `showMarkers: false` setting still hides markers; set it to true to restore them. There is no duplicate decoration hover. `showHoverMetadata: true` restores IDs, status and reasons for debugging. Do not turn off `editor.hover.enabled`: that disables comment hovers too.
 
 `highlightStyle` is `line` (default), `underline`, or `off`. Normal syntax colors remain unchanged. Comments needing review use amber; missing or ambiguous targets are not highlighted at their old positions. Themes can override `lineComments.highlightBackground`, `lineComments.highlightBorder`, `lineComments.reviewBackground`, and `lineComments.reviewBorder` under `workbench.colorCustomizations`. All color overrides belong to the editor settings, not the sidecar.
 
@@ -74,7 +75,7 @@ node src/cli.js compact src/app.tsx \
 
 Fingerprints are matching metadata, not encryption or proof of semantic identity. Exact-context moves can be located; arbitrary rewrites and cross-file moves still need review/reattachment. V2 may be larger in bytes than short v1 code snippets; it removes duplicated code, not necessarily metadata size. Agents should continue using the combined reader, which omits per-note fingerprints, rather than reading the raw sidecar.
 
-### Updating from 0.1.0 or 0.1.1
+### Updating from 0.1.0, 0.1.1 or 0.1.2
 
 Install the new VSIX over the existing extension and run **Developer: Reload Window**. Extract the new source archive into a separate folder for tests and the updated example. Legacy `.comment` files do not require migration; the code-free conversion is opt-in. The update does not overwrite comments in existing workspaces.
 
@@ -177,8 +178,28 @@ npm run benchmark
 npm run package
 ```
 
-`npm run check` checks JavaScript syntax, not TypeScript types. This prototype is plain CommonJS JavaScript and has no transpilation step. Packaging uses the included Python 3 script and ZIP/XML standard libraries. The produced VSIX is a local unsigned archive. A publisher can instead use `vsce package` and publish under a registered publisher after desktop testing; the placeholder `line-comments-local` is not a claimed public publisher.
+`npm run check` checks JavaScript syntax, not TypeScript types. This prototype is plain CommonJS JavaScript and has no transpilation step. Packaging uses the included Python 3 script and ZIP/XML standard libraries. The produced VSIX is `dist/line-comments-0.1.3.vsix`, a local unsigned archive. Tests, packaging scripts, development reports and example fixtures are not packaged; they remain in the source distribution. A publisher can instead use `vsce package` and publish under a registered publisher after desktop testing; the placeholder `line-comments-local` is not a claimed public publisher.
 
-See FORMAT.md, SECURITY.md, TESTING.md, BENCHMARK.json and ROADMAP.md for exact scope and limitations. Keep `.comment` files in version control with source. Never run `git apply` on them: both formats are independent annotation records, not general-purpose cumulative patches.
+See FORMAT.md, SECURITY.md, TESTING.md, PERFORMANCE.md and ROADMAP.md for exact scope and limitations. Keep `.comment` files in version control with source. Never run `git apply` on them: both formats are independent annotation records, not general-purpose cumulative patches.
 
 Exclude `.comment` files from public assets, broad copy/deployment rules and class-name scanning as needed. Keep compiler directives, linter controls, license headers and tool-significant documentation comments in source. No compiler or bundler is patched by this extension.
+
+## Performance and generated-file cleanup
+
+The implementation is CommonJS JavaScript on Node.js, not Rust. Python 3 is only used to package the local VSIX. There is no Rust toolchain, Cargo workspace, native addon, npm dependency install or bundling step.
+
+The resolver now checks the source revision and target lines before building a full line-fingerprint index. It builds that index only when relocation is needed. The editor caches comments grouped by source line for direct hover lookups, reuses the service's resolved snapshot for unchanged buffers, and skips hash/edit-history tracking when a file has no comments. None of these changes waive revision/target checks or guess ambiguous attachment positions.
+
+Run `npm run benchmark` to create `reports/BENCHMARK.json`. Compare against an extracted old source folder with `npm run benchmark -- --baseline /absolute/path/to/old/source`, which creates `reports/PERFORMANCE-COMPARISON.json`. These are warm synthetic measurements, not complete VS Code/Cursor responsiveness measurements. See PERFORMANCE.md for this build's recorded comparison and remaining work.
+
+Generated build outputs live in `dist/`; reports live in `reports/`. Both are ignored by Git and excluded from the VSIX. A safe cleanup helper also recognizes the old root-level release archives and test/benchmark reports:
+
+```sh
+npm run clean                  # Preview only. Deletes nothing.
+npm run clean -- --apply       # Remove only the previewed artifact categories.
+npm test && npm run package    # Rebuild dist/line-comments-0.1.3.vsix.
+```
+
+This does not remove source code, comments, tests, integration instructions, patch files, arbitrary reports, active lock files, or temporary sidecar writes. Keep both format-v1.js and format-v2.js: the first still reads/writes legacy sidecars. Do not delete detached comments as a performance trick; inspect them with `node src/cli.js check` and reattach or delete them explicitly after review.
+
+Deleting generated reports saves disk space and reduces repository clutter. They were not executed by the extension, so this cleanup is not a runtime speed optimization.

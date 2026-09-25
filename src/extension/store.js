@@ -7,6 +7,22 @@ const { trackEdits } = require('../core/edits');
 const { MAX_FILE_BYTES } = require('../node/workspace');
 const { hasDirtyDocument } = require('./documents');
 
+function indexResults(results) {
+  const byLine = new Map();
+  for (const result of results) {
+    if (result.line === null) continue;
+    const items = byLine.get(result.line);
+    if (items) items.push(result);
+    else byLine.set(result.line, [result]);
+  }
+  return byLine;
+}
+
+function setResults(entry, results) {
+  entry.results = results;
+  entry.byLine = indexResults(results);
+}
+
 class Store {
   constructor(onUpdate, onError) {
     this.cache = new Map();
@@ -33,8 +49,9 @@ class Store {
     const root = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath;
     const snapshot = await load(root, document.uri.fsPath);
     const current = document.getText();
-    const entry = { snapshot, source: current, results: resolveNotes(current, snapshot.notes), history: new Map(), version: document.version };
-    entry.history.set(sourceHash(current), entry.results);
+    const entry = { snapshot, source: current, history: new Map(), version: document.version };
+    setResults(entry, current === snapshot.source ? snapshot.results : resolveNotes(current, snapshot.notes));
+    if (entry.results.length) entry.history.set(current === snapshot.source ? snapshot.sourceHash : sourceHash(current), entry.results);
     this.cache.set(document.uri.toString(), entry);
     this.onUpdate(document.uri);
     return entry;
@@ -46,11 +63,17 @@ class Store {
     if (!entry || !event.contentChanges.length) return;
     const next = document.getText();
     if (Buffer.byteLength(next) > MAX_FILE_BYTES) { this.cache.delete(key); this.onUpdate(document.uri); return; }
+    if (!entry.results.length) {
+      entry.source = next;
+      entry.version = document.version;
+      this.onUpdate(document.uri);
+      return;
+    }
     const nextHash = sourceHash(next);
-    if (entry.history.has(nextHash)) entry.results = entry.history.get(nextHash);
+    if (entry.history.has(nextHash)) setResults(entry, entry.history.get(nextHash));
     else {
-      try { entry.results = trackEdits(entry.source, next, entry.results, event.contentChanges); }
-      catch { entry.results = resolveNotes(next, entry.snapshot.notes); }
+      try { setResults(entry, trackEdits(entry.source, next, entry.results, event.contentChanges)); }
+      catch { setResults(entry, resolveNotes(next, entry.snapshot.notes)); }
     }
     entry.source = next; entry.version = document.version;
     entry.history.set(nextHash, entry.results);
@@ -69,7 +92,7 @@ class Store {
       await saveTracked(entry.snapshot, source, entry.results);
       const snapshot = await load(entry.snapshot.root, entry.snapshot.sourcePath);
       entry.snapshot = snapshot;
-      if (entry.version === version) entry.results = resolveNotes(source, snapshot.notes);
+      if (entry.version === version) setResults(entry, source === snapshot.source ? snapshot.results : resolveNotes(source, snapshot.notes));
       this.onUpdate(document.uri);
     } catch (error) { this.onError(error); }
     finally { this.saving.delete(key); }

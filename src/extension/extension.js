@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { Store } = require('./store');
 const { DraftProvider } = require('./drafts');
-const { commentMarkdown, diagnosticsFor } = require('./presentation');
+const { commentMarkdown, diagnosticsFor, markerText } = require('./presentation');
 const { createHighlights } = require('./highlights');
 const { render } = require('../core/render');
 const service = require('../node/service');
@@ -58,7 +58,8 @@ function activate(context) {
       diagnostics.set(uri, diagnosticsFor(document, entry.results));
       const options = [];
       const config = vscode.workspace.getConfiguration('lineComments', uri);
-      const show = config.get('showMarkers', false);
+      const markerStyle = config.get('markerStyle', 'label');
+      const show = config.get('showMarkers', true) && markerStyle !== 'off';
       const highlightStyle = config.get('highlightStyle', 'line');
       const groups = new Map();
       if (show) for (const item of entry.results) {
@@ -68,7 +69,14 @@ function activate(context) {
       }
       for (const [line, notes] of groups) {
         const needsReview = notes.some(item => item.status === 'review');
-        options.push({ range: document.lineAt(line - 1).range, renderOptions: { after: { contentText: needsReview ? '!' : '◌' } } });
+        options.push({
+          range: document.lineAt(line - 1).range,
+          renderOptions: {
+            after: {
+              contentText: markerText(needsReview, markerStyle),
+            },
+          },
+        });
       }
       for (const editor of vscode.window.visibleTextEditors) {
         if (editor.document.uri.toString() !== uri.toString()) continue;

@@ -2,7 +2,7 @@
   "name": "line-comments",
   "displayName": "Line Comments",
   "description": "Per-line comments in sibling .comment patches. Hover context, line tracking, review warnings, and agent CLI/MCP access without changing source.",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "publisher": "line-comments-local",
   "license": "MIT",
   "engines": {
@@ -42,7 +42,8 @@
     "check": "node scripts/check-syntax.js",
     "benchmark": "node scripts/benchmark.js",
     "package": "python3 scripts/package-vsix.py",
-    "test:aliases": "node scripts/test-aliases.js"
+    "test:aliases": "node scripts/test-aliases.js",
+    "clean": "node scripts/clean.js"
   },
   "contributes": {
     "languages": [
@@ -150,7 +151,22 @@
         "lineComments.showMarkers": {
           "type": "boolean",
           "default": true,
-          "description": "Show a small dot on annotated lines. Off by default; hovering the source line still shows its comments."
+          "description": "Show the external-comment marker. Enabled by default. Use markerStyle to choose the labeled ring or ring only."
+        },
+        "lineComments.markerStyle": {
+          "type": "string",
+          "enum": [
+            "label",
+            "icon",
+            "off"
+          ],
+          "default": "label",
+          "enumDescriptions": [
+            "Dashed circle and comment text: ◌ comment.",
+            "Dashed circle only: ◌.",
+            "Hide markers; comments are still available on hover."
+          ],
+          "description": "Annotation marker appearance. Review markers append !."
         },
         "lineComments.showHoverMetadata": {
           "type": "boolean",

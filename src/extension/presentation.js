@@ -1,6 +1,12 @@
 'use strict';
 const vscode = require('vscode');
 
+function markerText(needsReview, style) {
+  const label = style === 'icon' ? '◌' : '◌ comment';
+  if (needsReview) return `${label} !`;
+  return label;
+}
+
 function commentMarkdown(result, options = {}) {
   const markdown = new vscode.MarkdownString();
   markdown.isTrusted = false;
@@ -26,4 +32,4 @@ function diagnosticsFor(document, results) {
     return diagnostic;
   });
 }
-module.exports = { commentMarkdown, diagnosticsFor };
+module.exports = { commentMarkdown, diagnosticsFor, markerText };

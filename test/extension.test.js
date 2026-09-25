@@ -200,24 +200,37 @@ async function addDraft(api, root, text = 'Wait for initialization.') {
   await api.drafts.writeFile(uri, Buffer.from(text));
   return uri;
 }
-test('quiet defaults render one comment body without markers, status bar or revision metadata', async t => {
+test('defaults render labeled comment marker without status bar or revision metadata', async t => {
   const { root, document, editor, api } = await setup(t);
   await addDraft(api, root);
   await api.refresh(document.uri);
-  assert.deepEqual(editor.decorations, []);
+  assert.equal(editor.decorations.length, 1);
+  assert.equal(
+    editor.decorations[0].renderOptions.after.contentText,
+    '◌ comment'
+  );
   assert.equal(vscode.status.visible, false);
   const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 3), { isCancellationRequested: false });
   assert.equal(hover.contents.length, 1);
   assert.equal(hoverText(hover), 'Wait for initialization.');
 });
-test('optional markers are dots with no decoration hover to duplicate provider content', async t => {
+test('marker can use icon-only mode without decoration hover', async t => {
   const { root, document, editor, api } = await setup(t);
   await addDraft(api, root);
   vscode.configuration.showMarkers = true;
+  vscode.configuration.markerStyle = 'icon';
   await api.refresh(document.uri);
+
   assert.equal(editor.decorations.length, 1);
-  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌');
-  assert.equal(Object.hasOwn(editor.decorations[0], 'hoverMessage'), false);
+  assert.equal(
+    editor.decorations[0].renderOptions.after.contentText,
+    '◌'
+  );
+  assert.equal(
+    Object.hasOwn(editor.decorations[0], 'hoverMessage'),
+    false
+  );
+
   vscode.configuration.showMarkers = false;
   await api.refresh(document.uri);
   assert.deepEqual(editor.decorations, []);
