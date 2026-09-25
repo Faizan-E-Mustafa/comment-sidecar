@@ -134,9 +134,8 @@ test('hover returns comment as escaped text, never trusted HTML or commands', as
   await api.store.get(document);
   const provider = hoverProviders[hoverProviders.length - 1];
   const hover = await provider.provideHover(document, new Position(1, 4), { isCancellationRequested: false });
-  assert.equal(hover.contents[0].isTrusted, false);
-  assert.equal(hover.contents[0].supportHtml, false);
-  assert.ok(hover.contents[0].parts.some(part => part.type === 'text' && part.value === text));
+  assert.ok(hover.contents.every(content => content.isTrusted === false && content.supportHtml === false));
+  assert.ok(hover.contents[1].parts.some(part => part.type === 'text' && part.value === text));
   assert.equal(await provider.provideHover(document, new Position(0, 0), { isCancellationRequested: false }), undefined);
 });
 test('store tracks insertion, persists coordinates on save, and does not edit source itself', async t => {
@@ -194,7 +193,10 @@ test('editor rename participants include sibling patch without overwrite', async
 });
 
 function hoverText(hover) {
-  return hover.contents.flatMap(content => content.parts.map(part => part.value)).join('');
+  return hover.contents.slice(1).flatMap(content => content.parts.map(part => part.value)).join('');
+}
+function hoverHeader(hover) {
+  return hover.contents[0].parts.map(part => part.value).join('');
 }
 async function addDraft(api, root, text = 'Wait for initialization.') {
   const uri = api.drafts.create(await service.load(root, 'app.ts'), 2);
@@ -209,7 +211,8 @@ test('defaults show the labeled ring with one comment body and no healthy status
   assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ comment');
   assert.equal(vscode.status.visible, false);
   const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 3), { isCancellationRequested: false });
-  assert.equal(hover.contents.length, 1);
+  assert.equal(hover.contents.length, 2);
+  assert.equal(hoverHeader(hover), '**Comment on line 2**');
   assert.equal(hoverText(hover), 'Wait for initialization.');
 });
 test('optional markers are rings with no decoration hover to duplicate provider content', async t => {
@@ -435,8 +438,8 @@ test('a saved source reuses the service resolution and line lookup groups same-l
   // Reject full-list scans specifically in the hover path.
   entry.results.filter = () => { throw new Error('Hover scanned all annotations.'); };
   const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
-  assert.equal(hover.contents.length, 2);
-  const bodies = hover.contents.map(content => content.parts.map(part => part.value).join(''));
+  assert.equal(hover.contents.length, 3);
+  const bodies = hover.contents.slice(1).map(content => content.parts.map(part => part.value).join(''));
   assert.deepEqual(bodies, entry.byLine.get(2).map(item => item.note.text));
   assert.deepEqual([...bodies].sort(), ['First.', 'Second.']);
 });
@@ -470,7 +473,8 @@ test('manifest defaults render the original labeled ring and a single hover cont
   assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ comment');
   assert.equal(Object.hasOwn(editor.decorations[0], 'hoverMessage'), false);
   const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
-  assert.equal(hover.contents.length, 1);
+  assert.equal(hover.contents.length, 2);
+  assert.equal(hoverHeader(hover), '**Comment on line 2**');
   assert.equal(hoverText(hover), 'Wait for initialization.');
 });
 
@@ -496,5 +500,13 @@ test('multiple annotations share one labeled ring while retaining both comment b
   assert.equal(editor.decorations.length, 1);
   assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌ comment');
   const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
-  assert.equal(hover.contents.length, 2);
+  assert.equal(hover.contents.length, 3);
+  assert.equal(hoverHeader(hover), '**2 comments on line 2**');
+});
+test('hover names the annotated line so a card covering the line above is unambiguous', async t => {
+  const { root, document, api } = await setup(t);
+  await addDraft(api, root);
+  const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
+  assert.equal(hoverHeader(hover), '**Comment on line 2**');
+  assert.equal(hoverText(hover), 'Wait for initialization.');
 });

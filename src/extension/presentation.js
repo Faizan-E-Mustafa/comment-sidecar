@@ -27,6 +27,15 @@ function markerDecorations(document, byLine, { showMarkers, markerStyle }) {
   return options;
 }
 
+function hoverHeader(line, count) {
+  const markdown = new vscode.MarkdownString();
+  markdown.isTrusted = false;
+  markdown.supportHtml = false;
+  const label = count === 1 ? `Comment on line ${line}` : `${count} comments on line ${line}`;
+  markdown.appendMarkdown(`**${label}**`);
+  return markdown;
+}
+
 function commentMarkdown(result, options = {}) {
   const markdown = new vscode.MarkdownString();
   markdown.isTrusted = false;
@@ -53,4 +62,4 @@ function diagnosticsFor(document, results) {
     return diagnostic;
   });
 }
-module.exports = { commentMarkdown, diagnosticsFor, markerText, markerDecorations };
+module.exports = { hoverHeader, commentMarkdown, diagnosticsFor, markerText, markerDecorations };

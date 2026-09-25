@@ -3,7 +3,7 @@ const vscode = require('vscode');
 const path = require('node:path');
 const { Store } = require('./store');
 const { DraftProvider } = require('./drafts');
-const { commentMarkdown, diagnosticsFor, markerDecorations } = require('./presentation');
+const { hoverHeader, commentMarkdown, diagnosticsFor, markerDecorations } = require('./presentation');
 const { createHighlights } = require('./highlights');
 const { readSettings } = require('./settings');
 const { render } = require('../core/render');
@@ -158,7 +158,9 @@ function activate(context) {
           const { showHoverMetadata: showMetadata } = readSettings(
             vscode.workspace.getConfiguration('lineComments', document.uri),
           );
-          return new vscode.Hover(items.map(item => commentMarkdown(item, { showMetadata })), document.lineAt(position.line).range);
+          const line = position.line + 1;
+          const contents = [hoverHeader(line, items.length), ...items.map(item => commentMarkdown(item, { showMetadata }))];
+          return new vscode.Hover(contents, document.lineAt(position.line).range);
         } catch (error) {
           log(error);
           return undefined;

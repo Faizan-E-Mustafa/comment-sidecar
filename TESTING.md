@@ -36,7 +36,7 @@ They do not establish correct rendering inside a real VS Code/Cursor desktop, ma
 
 ## Desktop smoke checklist
 
-1. Install the VSIX and reload the editor. Open the examples folder. Confirm lines 4/5 show `◌ comment`, subtle tint/left edge, and one copy of each note in hover. Source bytes must not change.
+1. Install the VSIX and reload the editor. Open the examples folder. Confirm lines 4/5 show `◌ comment`, subtle tint/left edge, a hover titled with the annotated line number, and one copy of each note. Source bytes must not change.
 2. Set `markerStyle` to `icon`, then `off`, then `label`. Check `showMarkers:false` hides only markers; restore it to true. Try `highlightStyle` line/underline/off and metadata opt-in. Native TypeScript and third-party hover content must not be suppressed.
 3. Add/edit/delete a multiline comment through the side draft. New `.comment` files contain fingerprint metadata, not copied source. Replace a sidecar's first line with `# line-comments v1`: expect an unsupported-version error in the Line Comments output, no markers or hover, and an unchanged sidecar after saving the source.
 4. Insert lines above the target, edit it, delete it, undo, save and reopen. Confirm movement/review/detachment as appropriate. Reattach only after identifying the intended line; mark reviewed only after checking the explanation.

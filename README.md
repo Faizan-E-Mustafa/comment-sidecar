@@ -65,7 +65,7 @@ Defaults:
 | `highlightStyle` | `line`: subtle tint/left edge; `underline`; `off`. |
 | `showHoverMetadata` | `false`: comment text and necessary warnings; `true`: IDs, attachment status and reason. |
 
-Needs-review annotations keep the circle and append `!`: `◌ comment !` or `◌ !`, with the warning highlight. Missing or ambiguous targets get no marker at an obsolete line. Multiple notes on one line share one marker; each note body appears once in the hover.
+Needs-review annotations keep the circle and append `!`: `◌ comment !` or `◌ !`, with the warning highlight. Missing or ambiguous targets get no marker at an obsolete line. Multiple notes on one line share one marker. The hover starts with **Comment on line N** (or **2 comments on line N**) because the card can cover the line above; each note body then appears once.
 
 The extension contributes one hover provider and no decoration hover. It does not suppress diagnostics or other extensions' hovers. Highlight colors use the `lineComments.highlightBackground`, `highlightBorder`, `reviewBackground`, and `reviewBorder` theme tokens. Defaults are declared once in `package.json` and read by `src/extension/settings.js`; CLI and MCP versions also come from `package.json`.
 
