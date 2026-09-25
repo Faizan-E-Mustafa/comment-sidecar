@@ -26,7 +26,10 @@ check exits 1 for comments requiring attention, 2 for invocation errors.
 function argumentsOf(argv) {
   const positional = [];
   const flags = {};
-  const allowed = new Set(['root', 'start', 'end', 'mode', 'json', 'help', 'version', 'line', 'text', 'text-file', 'expected-text', 'source-hash', 'sidecar-hash', 'id', 'comment-budget']);
+  const allowed = new Set([
+    'root', 'start', 'end', 'mode', 'json', 'help', 'version', 'line', 'text',
+    'text-file', 'expected-text', 'source-hash', 'sidecar-hash', 'id', 'comment-budget',
+  ]);
 
   for (let i = 0; i < argv.length; i++) {
     const value = argv[i];
@@ -93,7 +96,12 @@ async function main(argv = process.argv.slice(2)) {
       process.stdout.write(result.output);
       return;
     }
-    process.stdout.write(`${JSON.stringify({ file: result.file, source: result.sourceHash, sidecar: result.sidecarHash, output: result.output }, null, 2)}\n`);
+    process.stdout.write(`${JSON.stringify({
+      file: result.file,
+      source: result.sourceHash,
+      sidecar: result.sidecarHash,
+      output: result.output,
+    }, null, 2)}\n`);
     return;
   }
 
@@ -112,8 +120,13 @@ async function main(argv = process.argv.slice(2)) {
   }
 
   const result = await service.write(root, file, {
-    operation: command, id: flags.id, line: flags.line === undefined ? undefined : Number(flags.line), text,
-    expectedText: flags['expected-text'], expectedSource: flags['source-hash'], expectedSidecar: flags['sidecar-hash'],
+    operation: command,
+    id: flags.id,
+    line: flags.line === undefined ? undefined : Number(flags.line),
+    text,
+    expectedText: flags['expected-text'],
+    expectedSource: flags['source-hash'],
+    expectedSidecar: flags['sidecar-hash'],
   });
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }

@@ -26,7 +26,8 @@ function createHighlights() {
           if (item.line === null || item.line < 1 || item.line > editor.document.lineCount) {
             continue;
           }
-          const state = item.status === 'review' || groups.get(item.line) === 'review' ? 'review' : 'highlight';
+          const needsReview = item.status === 'review' || groups.get(item.line) === 'review';
+          const state = needsReview ? 'review' : 'highlight';
           groups.set(item.line, state);
         }
       }

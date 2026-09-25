@@ -86,7 +86,12 @@ def validate(vsix, source, files):
             text = extension.read(name).decode('utf-8')
             for dependency in re.findall(r"require\(['\"](\.{1,2}/[^'\"]+)['\"]\)", text):
                 resolved = (ROOT / name[len('extension/'):]).parent.joinpath(dependency).resolve()
-                candidates = (resolved, Path(str(resolved) + '.js'), Path(str(resolved) + '.json'), resolved / 'index.js')
+                candidates = (
+                    resolved,
+                    Path(str(resolved) + '.js'),
+                    Path(str(resolved) + '.json'),
+                    resolved / 'index.js',
+                )
                 if not any(
                     candidate.is_relative_to(ROOT)
                     and f'extension/{candidate.relative_to(ROOT).as_posix()}' in names
@@ -108,7 +113,10 @@ def main():
         f'{sha256(file.read_bytes()).hexdigest()}  {file.name}\n' for file in (vsix, source)
     ), encoding='utf-8')
     print(f'{source} ({source.stat().st_size:,} bytes; {source_count} source files)')
-    print(f'Validated: {extension_count} VSIX files, source/runtime byte equality, local imports, manifest, ZIP integrity.')
+    print(
+        f'Validated: {extension_count} VSIX files, source/runtime byte equality, '
+        'local imports, manifest, ZIP integrity.'
+    )
     print(f'Checksums: {checksums}')
 
 

@@ -22,12 +22,16 @@ const FOREIGN = '# line-comments v1\n--- app.ts\n+++ app.ts.annotated\n@@ -2,3 +
 
 test('v2 stores coordinates, fingerprints and comments without copying target or neighbor code', () => {
   const raw = serialize('app.ts', [note()]);
+
   assert.match(raw, /^# line-comments v2\n/);
   assert.match(raw, /^@@ 3 @@ id=lc_wait/m);
   assert.match(raw, /^@anchor sha256 /m);
   assert.match(raw, /^\+\/\/ Wait until restoration finishes\./m);
-  for (const line of SOURCE.trimEnd().split('\n')) assert.ok(!raw.split('\n').includes(` ${line}`));
+  for (const line of SOURCE.trimEnd().split('\n')) {
+    assert.ok(!raw.split('\n').includes(` ${line}`));
+  }
   assert.doesNotMatch(raw, /session\.ready|function App|return render|return null/);
+
   const parsed = parse(raw).notes[0];
   assert.deepEqual(parsed, note());
   assert.deepEqual(Object.keys(parsed).sort(), ['anchor', 'base', 'id', 'line', 'state', 'text']);
@@ -36,7 +40,9 @@ test('v2 stores coordinates, fingerprints and comments without copying target or
 
 test('v2 round trips multiline bodies, empty body lines, diff-looking text and Unicode', () => {
   const item = createNote(SOURCE, 3, 'Reason.\n\n@@ not a header\n@anchor not metadata\n+// body\nαβ 日本語 🧪\n', { id: 'lc_body' });
+
   assert.deepEqual(v2([item])[0], item);
+
   const raw = serialize('app.ts', [item]).replaceAll('\n', '\r\n');
   assert.deepEqual(parse(raw).notes[0], item);
   assert.equal(resolveNotes(SOURCE.replaceAll('\n', '\r\n'), parse(raw).notes)[0].status, 'attached');
@@ -47,6 +53,7 @@ test('v2 handles empty files, trailing empty lines and duplicate comments at one
     const notes = v2([createNote(source, line, 'Boundary comment.')]);
     assert.equal(resolveNotes(source, notes)[0].line, line);
   }
+
   const notes = v2([note(), createNote(SOURCE, 3, 'Second note.', { id: 'lc_second' })]);
   assert.equal(notes.length, 2);
   assert.equal(resolveNotes(SOURCE, notes).filter(n => n.line === 3).length, 2);
@@ -77,10 +84,12 @@ test('weak generic target never becomes a target-only match after context change
 
 test('v2 live editing, deletion, saved review and tombstone survive reload', () => {
   const initial = resolveNotes(SOURCE, v2([note()]));
+
   const changes = [{ rangeOffset: SOURCE.indexOf('!ready'), rangeLength: 6, text: 'loading' }];
   const changed = applyChanges(SOURCE, changes);
   const results = trackEdits(SOURCE, changed, initial, changes);
   assert.equal(resolveNotes(changed, v2(rebaseNotes(changed, results)))[0].status, 'review');
+
   const start = SOURCE.indexOf('  if');
   const removal = [{ rangeOffset: start, rangeLength: SOURCE.indexOf('\n', start) - start + 1, text: '' }];
   const deleted = applyChanges(SOURCE, removal);
@@ -93,11 +102,13 @@ test('v2 live editing, deletion, saved review and tombstone survive reload', () 
 test('v2 agent rendering never emits anchor fingerprints or metadata blocks', () => {
   const notes = v2([note()]);
   const output = render(SOURCE, resolveNotes(SOURCE, notes), { start: 2, end: 4 });
+
   assert.match(output, /^3 \|   if \(!ready\) return null;/m);
   assert.match(output, /@3 \[lc_wait;attached\]/);
   assert.ok(!output.includes(notes[0].anchor.target));
   assert.ok(!output.includes(notes[0].anchor.context));
   assert.doesNotMatch(output, /@anchor|@@|base=/);
+
   const only = render(SOURCE, resolveNotes(SOURCE, notes), { mode: 'comments' });
   assert.doesNotMatch(only, /session\.ready|return null/);
 });
@@ -128,7 +139,8 @@ test('v2 enforces sidecar size, comment length and note count limits', () => {
   assert.throws(() => serialize('app.ts', [invalid]), /Comment/);
   assert.throws(() => serialize('app.ts', Array(1001).fill(note())), /Too many/);
   const many = Array.from({ length: 1001 }, (_, i) => ({ ...note(), id: `lc_n${i}` }));
-  const raw = serialize('app.ts', many.slice(0, 1000)) + serialize('app.ts', many.slice(1000)).split('\n').slice(3).join('\n');
+  const raw = serialize('app.ts', many.slice(0, 1000)) +
+    serialize('app.ts', many.slice(1000)).split('\n').slice(3).join('\n');
   assert.throws(() => parse(raw), /Too many/);
 });
 
@@ -142,23 +154,34 @@ test('v2 insertion property check preserves attachment at 100 different offsets'
   }
 });
 
-
 test('golden sidecar parses, re-serializes byte-identically and is reproduced by createNote', async () => {
-  const [source, raw, expected] = await Promise.all(['golden.ts', 'golden.ts.comment', 'golden.ts.comment.json']
-    .map(name => fs.readFile(path.join(FIXTURES, name), 'utf8')));
+  const [source, raw, expected] = await Promise.all(
+    ['golden.ts', 'golden.ts.comment', 'golden.ts.comment.json'].map(name =>
+      fs.readFile(path.join(FIXTURES, name), 'utf8')
+    )
+  );
+
   const parsed = parse(raw);
   assert.deepEqual(parsed, JSON.parse(expected));
   assert.equal(serialize('golden.ts', parsed.notes), raw);
   assert.equal(parse(raw.replaceAll('\n', '\r\n')).notes.length, parsed.notes.length);
-  const rebuilt = parsed.notes.map(item => createNote(source, item.line, item.text, { id: item.id, state: item.state }));
+
+  const rebuilt = parsed.notes.map(item =>
+    createNote(source, item.line, item.text, { id: item.id, state: item.state })
+  );
   assert.equal(serialize('golden.ts', rebuilt), raw);
+
   const results = resolveNotes(source, parsed.notes);
-  assert.deepEqual(results.map(item => [item.note.id, item.line, item.status]), parsed.notes.map(item => [item.id, item.state === 'detached' ? null : item.line, item.state]));
+  assert.deepEqual(
+    results.map(item => [item.note.id, item.line, item.status]),
+    parsed.notes.map(item => [item.id, item.state === 'detached' ? null : item.line, item.state])
+  );
 });
 
 test('bundled example sidecar loads, resolves and re-serializes without changes', async () => {
   const source = await fs.readFile(path.join(__dirname, '../examples/app.tsx'), 'utf8');
   const raw = await fs.readFile(path.join(__dirname, '../examples/app.tsx.comment'), 'utf8');
+
   const { name, notes } = parse(raw);
   assert.equal(serialize(name, notes), raw);
   assert.ok(notes.length > 0);
@@ -176,7 +199,16 @@ test('createNote returns only the canonical fingerprint shape without copied sou
 });
 
 test('notes with copied source instead of an anchor are rejected', () => {
-  const unanchored = { id: 'lc_old', base: 'a'.repeat(64), state: 'attached', line: 3, before: ['a', 'b'], target: 'c', after: [], text: 'Old.' };
+  const unanchored = {
+    id: 'lc_old',
+    base: 'a'.repeat(64),
+    state: 'attached',
+    line: 3,
+    before: ['a', 'b'],
+    target: 'c',
+    after: [],
+    text: 'Old.',
+  };
   assert.throws(() => serialize('app.ts', [unanchored]), /anchor/);
   assert.throws(() => resolveNotes(SOURCE, [unanchored]), /anchor/);
   assert.throws(() => serialize('app.ts', [{ ...note(), anchor: { ...note().anchor, target: 'short' } }]), /anchor/);
@@ -203,13 +235,26 @@ async function workspace(t, sidecar) {
 test('service writes fingerprint anchors for add, reanchor, review and sync without touching source', async t => {
   const root = await workspace(t);
   let snapshot = await service.load(root, 'app.ts');
-  const added = await service.write(root, 'app.ts', { operation: 'add', line: 3, text: 'New note.', expectedText: '  if (!ready) return null;', ...guards(snapshot) });
+  const added = await service.write(root, 'app.ts', {
+    operation: 'add',
+    line: 3,
+    text: 'New note.',
+    expectedText: '  if (!ready) return null;',
+    ...guards(snapshot),
+  });
   assert.equal(added.formatVersion, 2);
+
   const changed = SOURCE.replace('session.ready', 'readiness');
   await fs.writeFile(path.join(root, 'app.ts'), changed);
   snapshot = await service.load(root, 'app.ts');
   assert.equal(snapshot.results[0].status, 'review');
-  const expectAnchor = expected => assert.deepEqual(snapshot.notes[0], createNote(changed, expected.line, 'New note.', { id: added.id, base: snapshot.sourceHash, state: expected.state }));
+
+  const expectAnchor = expected =>
+    assert.deepEqual(
+      snapshot.notes[0],
+      createNote(changed, expected.line, 'New note.', { id: added.id, base: snapshot.sourceHash, state: expected.state })
+    );
+
   for (const [operation, extra, expected] of [
     ['sync', {}, { line: 3, state: 'review' }],
     ['review', { id: added.id }, { line: 3, state: 'attached' }],
@@ -220,33 +265,48 @@ test('service writes fingerprint anchors for add, reanchor, review and sync with
     expectAnchor(expected);
     assert.doesNotMatch(snapshot.raw, /readiness|return null|return render/);
   }
+
   assert.equal(await fs.readFile(path.join(root, 'app.ts'), 'utf8'), changed);
 });
 
 test('service rejects unknown operations', async t => {
   const root = await workspace(t, serialize('app.ts', [note()]));
   const snapshot = await service.load(root, 'app.ts');
-  await assert.rejects(() => service.write(root, 'app.ts', { operation: 'rename', ...guards(snapshot) }), /Operation must be add, update, remove, reanchor, review, or sync/);
+
+  await assert.rejects(
+    () => service.write(root, 'app.ts', { operation: 'rename', ...guards(snapshot) }),
+    /Operation must be add, update, remove, reanchor, review, or sync/
+  );
 });
 
 test('reading a valid v2 sidecar never rewrites it', async t => {
   const raw = serialize('app.ts', [note()]);
   const root = await workspace(t, raw);
   const before = await fs.stat(path.join(root, 'app.ts.comment'));
+
   await service.read(root, 'app.ts');
   await service.check(root);
+
   assert.equal(await fs.readFile(path.join(root, 'app.ts.comment'), 'utf8'), raw);
   assert.equal((await fs.stat(path.join(root, 'app.ts.comment'))).mtimeMs, before.mtimeMs);
 });
 
-for (const [label, sidecar] of [['unsupported-version', FOREIGN], ['malformed', '# line-comments v2\n--- app.ts\n+++ app.ts.annotated\n@@ broken\n']]) {
+for (const [label, sidecar] of [
+  ['unsupported-version', FOREIGN],
+  ['malformed', '# line-comments v2\n--- app.ts\n+++ app.ts.annotated\n@@ broken\n'],
+]) {
   test(`${label} sidecars are reported and left byte-identical by every write path`, async t => {
     const root = await workspace(t, sidecar);
     const file = path.join(root, 'app.ts.comment');
-    await assert.rejects(() => service.load(root, 'app.ts'), label === 'malformed' ? /hunk header/ : /Unsupported line-comments sidecar version/);
+
+    await assert.rejects(
+      () => service.load(root, 'app.ts'),
+      label === 'malformed' ? /hunk header/ : /Unsupported line-comments sidecar version/
+    );
     const report = await service.check(root);
     assert.equal(report.problems, 1);
     assert.equal(report.reports[0].status, 'error');
+
     const stale = { expectedSource: sourceHash(SOURCE), expectedSidecar: hash(sidecar) };
     for (const options of [
       { operation: 'add', line: 3, text: 'x', expectedText: '  if (!ready) return null;' },
@@ -258,9 +318,21 @@ for (const [label, sidecar] of [['unsupported-version', FOREIGN], ['malformed', 
     ]) {
       await assert.rejects(() => service.write(root, 'app.ts', { ...options, ...stale }));
     }
+
     const cli = path.join(__dirname, '../src/cli.js');
-    await assert.rejects(() => exec(process.execPath, [cli, 'read', 'app.ts', '--root', root]), error => error.code === 2 && /Line Comments:/.test(error.stderr));
-    await assert.rejects(() => exec(process.execPath, [cli, 'sync', 'app.ts', '--root', root, '--source-hash', stale.expectedSource, '--sidecar-hash', stale.expectedSidecar]), error => error.code === 2);
+    await assert.rejects(
+      () => exec(process.execPath, [cli, 'read', 'app.ts', '--root', root]),
+      error => error.code === 2 && /Line Comments:/.test(error.stderr)
+    );
+    await assert.rejects(
+      () => exec(process.execPath, [
+        cli, 'sync', 'app.ts', '--root', root,
+        '--source-hash', stale.expectedSource,
+        '--sidecar-hash', stale.expectedSidecar,
+      ]),
+      error => error.code === 2
+    );
+
     assert.equal(await fs.readFile(file, 'utf8'), sidecar);
     assert.equal(await fs.readFile(path.join(root, 'app.ts'), 'utf8'), SOURCE);
   });

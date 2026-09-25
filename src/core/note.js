@@ -18,7 +18,12 @@ function normalizeComment(text) {
   return text.replace(/\r\n/g, '\n');
 }
 function assertAnchor(anchor) {
-  if (!anchor || !HASH.test(anchor.target) || !HASH.test(anchor.context) || typeof anchor.strong !== 'boolean') {
+  if (
+    !anchor
+    || !HASH.test(anchor.target)
+    || !HASH.test(anchor.context)
+    || typeof anchor.strong !== 'boolean'
+  ) {
     throw new Error('Invalid anchor fingerprint.');
   }
   if (![anchor.before, anchor.after].every(n => Number.isInteger(n) && n >= 0 && n <= 2)) {
@@ -53,4 +58,4 @@ function createNote(source, line, text, options = {}) {
     anchor: anchorAt(lines, line),
   };
 }
-module.exports = { createNote, assertNote, assertComment, normalizeComment, MAX_NOTES, MAX_COMMENT_CHARS, PERSISTED_STATES };
+module.exports = { createNote, assertNote, assertComment, normalizeComment, MAX_NOTES };

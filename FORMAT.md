@@ -1,47 +1,97 @@
-# Line Comments sidecar format
+# The `.comment` file format
 
-The attachment unit is a physical source line, not a function, symbol or Markdown section. Each source file may have one sibling sidecar, such as `app.tsx.comment`. No source file is modified by comment operations.
+Each source file can have one sibling file with the same name plus `.comment`, for example `app.tsx.comment`.
+It holds comments attached to single lines of the source. Tools write these files; you should not need to edit them by hand.
 
-The header must be exactly `# line-comments v2`. Any other header, or any malformed content, is reported as an error; the file is never treated as empty or overwritten.
-
-## Syntax
-
-Illustrative example (replace each `<...>` with a real 64-character lowercase hex digest; tools do this automatically):
+## Example
 
 ```diff
 # line-comments v2
 --- app.tsx
 +++ app.tsx.annotated
-@@ 4 @@ id=lc_loading base=<source-sha256> state=attached
-@anchor sha256 before=2 after=2 strong=1 target=<target-sha256> context=<context-sha256>
+@@ 4 @@ id=lc_loading base=<sha256> state=attached
+@anchor sha256 before=2 after=2 strong=1 target=<sha256> context=<sha256>
 +// Wait for session restoration before choosing a screen.
+@@ 5 @@ id=lc_signedout base=<sha256> state=review
+@anchor sha256 before=2 after=2 strong=1 target=<sha256> context=<sha256>
++// A missing user means signed out only after loading finishes.
++// Second line of the same comment.
 ```
 
-The first three lines are the version and informational source/virtual-output names. The `.annotated` name does not refer to a file that must be created. Paths from headers are never used to read or write files; the sibling relationship is authoritative.
+Each `<sha256>` is a full 64-character lowercase hex SHA-256 digest.
 
-`@@ 4 @@` is an absolute one-based source line, not a unified-diff cumulative hunk coordinate. Each body line starts with `+// `; multiline bodies, including empty lines and code-like user-authored text, are preserved. `//` is the sidecar body marker in every source language; it is never inserted into the executable file. The format contains no copied code lines: context lines, code additions and deletions are rejected. Metadata field order is fixed. Notes are written sorted by line, then ID. The whole file ends with a newline; CRLF sidecars are read, and writes use LF. General-purpose `git apply`/`patch` tools must not be used on annotation sidecars.
+## Structure
+
+**Header** (first three lines):
+
+| Line | Content |
+| --- | --- |
+| 1 | Exactly `# line-comments v2`. |
+| 2 | `--- <source file name>` |
+| 3 | `+++ <source file name>.annotated` (a label only; no such file exists). |
+
+The names in the header are informational. The tool always finds the source by the sibling file name, never by the header.
+
+**One block per comment**, sorted by line, then by ID:
+
+| Line | Content |
+| --- | --- |
+| `@@ <line> @@ id=<id> base=<sha256> state=<state>` | Where the comment was last attached. |
+| `@anchor sha256 before=<0-2> after=<0-2> strong=<0 or 1> target=<sha256> context=<sha256>` | The line's fingerprint. |
+| `+// <text>` | One line of comment text. Repeat for multi-line comments. Empty lines are `+// `. |
+
+Rules:
+
+- `<line>` is the 1-based line number in the source. It is not a diff offset.
+- `<id>` matches `lc_[a-zA-Z0-9_-]{1,64}` and is unique in the file. It never changes, even when the comment is edited or reattached.
+- `<state>` is `attached`, `review` or `detached`.
+- Field order is fixed.
+- No source code is ever stored. Lines starting with a space (context), `+` without `// `, or `-` are rejected.
+- The file ends with a newline. Files with CRLF line endings are read; the tool writes LF.
+- `+// ` is the marker in every language. Nothing is ever inserted into the source file.
+- Do not use `git apply` or `patch` on these files. They look like diffs but are not.
 
 ## Fingerprints
 
-`base` is SHA-256 of the complete source, UTF-8 encoded after CRLF→LF normalization. Final newlines matter. `target` is SHA-256 of the exact target line excluding its newline. `context` is SHA-256 of `JSON.stringify([...beforeLines, targetLine, ...afterLines])`; JSON array encoding preserves line boundaries. `before` and `after` are the number of neighboring lines, from zero to two. `strong` is 1 when the original target's trimmed UTF-16 length exceeds three characters; otherwise 0. This prevents a lone brace or blank line becoming a target-only provisional match after context disappears.
+| Field | How it is computed |
+| --- | --- |
+| `base` | SHA-256 of the whole source file (UTF-8, CRLF converted to LF). |
+| `target` | SHA-256 of the target line's exact text, without its newline. |
+| `context` | SHA-256 of `JSON.stringify([...linesBefore, targetLine, ...linesAfter])`. |
+| `before`, `after` | How many neighbor lines were used, 0 to 2 each (fewer at the start or end of the file). |
+| `strong` | `1` if the trimmed target line is longer than 3 characters, else `0`. |
 
-In memory, a note has exactly this shape; `anchor.target` and `anchor.context` are digests, not source text:
+`strong` stops a blank line or a lone `}` from being matched on its own after its neighbors change.
+
+In memory, a comment ("note") has exactly this shape:
 
 ```js
 { id, base, state, line, text, anchor: { before, after, strong, target, context } }
 ```
 
-## States and reconciliation
+## Finding the line again
 
-`state` persists `attached`, `review`, or `detached`. Detached is a persistent tombstone produced by precise destructive editor changes and cleared only by explicit reattachment (or recent in-memory undo recovery); it stays detached even if identical source reappears. `moved` and `ambiguous` are resolution results, never persisted states. `id` is a stable comment ID that survives edits and reattachment; it is not an identity for source code.
+When the source changes, the tool hashes every current line and compares:
 
-The resolver hashes current source lines and compares the stored fingerprints. Matching whole-file base + target uses the recorded position. Across revisions, a unique complete matching context attaches or moves; a unique strong target alone requires review; tiny generic targets detach. Multiple matches are ambiguous. Missing targets detach. The resolver does not guess by nearest line, whitespace-insensitive matching, symbol names, embeddings, an AST, a hidden database or Git history, and it cannot find approximate matches from a digest.
+1. **Saved as `detached`**: stays `detached`.
+2. **Same file revision and target matches at the saved line**: keep the saved state there.
+3. **Exactly one place where target and neighbors all match**: `attached` if at the same line, `moved` otherwise (or `review` if the saved state is `review`).
+4. **The target (or target and neighbors) matches in several places**: `ambiguous`. The tool never picks the nearest one.
+5. **Only the target line matches, in exactly one place, and it is strong**: `review` there.
+6. **Otherwise**: `detached`.
 
-`attached` means the recorded positioning matched, not that the explanation is true. Hash equality is a matching heuristic with the usual cryptographic collision assumption, not proof of historical or semantic identity. An exact copied block can be indistinguishable from an original that was deleted.
+A comment becomes `detached` when its line is deleted, split or rewritten in the editor. It stays detached until someone reattaches it, even if identical code reappears.
 
-## Limits and validation
+`moved` and `ambiguous` are computed on every read and never saved.
 
-A source file and its sidecar are limited to 2 MiB each, with at most 1000 notes per file and 16,000 characters per comment. IDs match `lc_[a-zA-Z0-9_-]{1,64}` and must be unique within a file. Hashes are complete lowercase SHA-256 values. Binary, invalid UTF-8 and NUL-containing input are rejected. UTF-16 offsets from editor changes are used for live position tracking; external anchors use full line text.
+Matching is by exact hashes only. There is no fuzzy matching, AST, symbol lookup or Git history. "Attached" means the position matched, not that the comment is still correct.
 
-The source and sidecar hashes returned by agent reads are independent write guards. A sidecar write requires both; adding and reattaching additionally require the exact current target line text. Writer locks and atomic rename coordinate cooperating writers; see SECURITY.md for filesystem race limitations. Agents use the combined or comments-only reader, which does not emit per-note fingerprints.
+## Limits
 
+- Source file and `.comment` file: 2 MiB each, UTF-8 text, no NUL bytes.
+- 1000 comments per file.
+- 16,000 characters per comment.
+
+## Errors
+
+If a `.comment` file has a different header or any invalid content, every operation on it fails with an error that names the problem. The file is never treated as empty and never overwritten.

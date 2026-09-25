@@ -1,17 +1,47 @@
 # Security and data handling
 
-No model requests, telemetry, analytics, HTTP listener or outbound networking are implemented. All extension metadata stays in local files/memory. CLI/MCP output may be sent to an external model by the agent client that invokes it; that is outside this tool's control. Sidecars store target/context fingerprints instead of copied source, but can still contain sensitive rationale: apply the same access, Git, backup and secret-scanning controls as source.
+## What the tool does and does not do
 
-Hover bodies use escaped plain text in an untrusted MarkdownString with HTML disabled. No note text is evaluated or executed. Agent output quotes comment bodies and labels them as repository data. This reduces ambiguity but does not prove an external model is immune to prompt injection.
+- No network access, telemetry, analytics or model requests. Everything stays in local files and memory.
+- Source files are never written. Only `<source>.comment` files change.
+- CLI and MCP output may be sent to a model by the agent that runs them. That is outside this tool's control.
 
-Workspace trust gates extension writes. The standalone MCP server starts read-only unless explicitly launched with --allow-write; writable tools change sidecars only. The CLI performs only the explicit requested operation. Both are confined to a selected root by normal path/canonical-path validation, reject final source/sidecar symlinks, and reject directory symlink escapes. Internal directory symlinks and workspace-directory aliases are canonicalized. Dirty editor source and sidecar checks compare filesystem identity rather than raw URI strings, so an alias does not bypass the unsaved-file guard. Both lexical and resolved dependency-directory names are excluded.
+## Who can write
 
-This is not an OS sandbox. A malicious process that can concurrently modify filesystem paths could race path validation or atomic replacement. Cooperating tool writers use an exclusive sidecar lock, source/sidecar revision guards and same-directory temp-file rename. Noncooperating editor/file processes are checked optimistically, but there is no kernel-level compare-and-swap across source and sidecar. No multi-file transaction or power-loss durability guarantee is claimed. Do not run against repositories writable by hostile local users without OS isolation.
+- **Editor:** only in a trusted workspace (VS Code workspace trust). Untrusted workspaces are read-only: hovers work, writes do not.
+- **MCP server:** read-only unless started with `--allow-write`. Even then it can change only `.comment` files.
+- **CLI:** performs only the command it is given.
 
-Locks use `<source>.comment.lock`. A crash may leave one behind. Do not remove it while another writer is active. Once that is ruled out, remove the stale lock and retry. The tool does not automatically delete somebody else's lock. Ordinary writes use mode 0600 for newly replaced sidecars; no executable source permissions are changed.
+## Path safety
 
-The source and sidecar each have a 2 MiB limit. Scans exclude common dependency/generated/VCS directories, limit traversal to 200,000 entries and 5000 sidecars, and report failure rather than claiming a partial scan is complete. There is no broad full-repository model ingestion.
+- Every path must be inside the selected workspace root.
+- Source and `.comment` files that are symlinks are rejected.
+- Directory symlinks that lead outside the workspace are rejected. Directory aliases inside it (such as macOS `/var` → `/private/var`) are resolved and allowed.
+- `.git`, `node_modules`, `dist`, `build`, `.next`, `.venv`, `vendor`, `.turbo` and `coverage` are skipped, whether reached directly or through a link.
+- The unsaved-file checks compare real file identity, so an alias cannot bypass them.
 
-Caveats: no .gitignore-compatible scanner, no secrets classifier, no remote filesystem-provider support, no cryptographic comment author signatures, no external editor interception, no MCP auth because the server is local stdio only. The VSIX is unsigned and unpublished. Enterprise extension policies may disallow it.
+## Concurrent writes
 
-Fingerprints are not encryption or redaction. Common source strings can be guessed and hashed for comparison; filenames, line counts, comment prose and revision fingerprints remain visible. A maliciously changed sidecar can alter claimed constraints just as an inline comment can. No cryptographic authenticity or identity guarantee is claimed. Code quoted intentionally inside a comment is stored as written.
+- Writers take an exclusive lock file, `<source>.comment.lock`.
+- Every write re-checks the source and sidecar hashes, writes a temp file, and renames it into place.
+- These protect against other cooperating writers (the editor, the CLI, agents). They are **not** an OS sandbox. A hostile local process that changes files at the same moment could race the checks. Do not run against repositories that hostile users can write to without OS isolation.
+- There is no multi-file transaction and no power-loss guarantee.
+- A crash can leave a lock file behind. Delete it only after making sure no writer is running. The tool never deletes someone else's lock.
+- New sidecars are written with mode 0600.
+
+## Comment content
+
+- Hovers show comment text as plain text in an untrusted Markdown string, with HTML and commands disabled. Comment text is never executed.
+- Agent output labels comments as repository data, not instructions. This helps, but cannot guarantee a model will ignore instructions hidden in a comment.
+- Fingerprints are not encryption. Common lines can be guessed and hashed. File names, line numbers, comment text and hashes are all readable.
+- Comments may contain sensitive reasoning. Treat `.comment` files like source: same access control, Git hygiene, backups and secret scanning.
+- Anyone who can edit a `.comment` file can change what it claims, just like an inline comment. There are no signatures.
+
+## Limits
+
+- Source and `.comment` files: 2 MiB each, UTF-8 text, no NUL bytes.
+- Workspace scans stop at 200,000 entries or 5,000 sidecars and report an error instead of a partial result.
+
+## Not provided
+
+No `.gitignore`-aware scanning, secret detection, remote filesystem support, author signatures, MCP authentication (the server is local stdio only), or signed VSIX. Enterprise extension policies may block an unsigned VSIX.

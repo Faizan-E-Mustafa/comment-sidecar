@@ -66,7 +66,9 @@ with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
         if file.is_symlink():
             raise RuntimeError(f'Refusing a symlink in the release: {file}')
         data = file.read_bytes()
-        info = zipfile.ZipInfo(f"extension/{file.relative_to(root).as_posix()}", date_time=(1980, 1, 1, 0, 0, 0))
+        info = zipfile.ZipInfo(
+            f"extension/{file.relative_to(root).as_posix()}", date_time=(1980, 1, 1, 0, 0, 0)
+        )
         info.compress_type = zipfile.ZIP_DEFLATED
         info.create_system = 3
         info.external_attr = (0o100755 if data.startswith(b'#!') else 0o100644) << 16

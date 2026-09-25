@@ -75,7 +75,10 @@ function validate(schema, input) {
     if (!property) {
       throw new Error(`Unknown argument: ${key}`);
     }
-    if (property.type === 'integer' ? !Number.isInteger(value) || value < property.minimum : typeof value !== property.type) {
+    const validType = property.type === 'integer'
+      ? Number.isInteger(value) && value >= property.minimum
+      : typeof value === property.type;
+    if (!validType) {
       throw new Error(`Invalid argument: ${key}`);
     }
     if (property.maximum !== undefined && value > property.maximum) {
@@ -92,7 +95,11 @@ function createHandler(root, allowWrite = false) {
   const definitions = tools(allowWrite);
   const error = (id, code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
   return async message => {
-    if (!message || Array.isArray(message) || message.jsonrpc !== '2.0' || typeof message.method !== 'string') {
+    const invalidRequest = !message
+      || Array.isArray(message)
+      || message.jsonrpc !== '2.0'
+      || typeof message.method !== 'string';
+    if (invalidRequest) {
       return error(message?.id, -32600, 'Invalid Request');
     }
 

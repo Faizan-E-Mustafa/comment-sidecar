@@ -1,77 +1,83 @@
 # Line Comments
 
-Per-line comments stored next to code, not inside it.
+Comments for individual source lines, stored next to the code instead of inside it.
 
 ```text
-app.tsx          Source, never written by this tool.
-app.tsx.comment  Comments attached to individual source lines.
+app.tsx          Your source file. This tool never writes to it.
+app.tsx.comment  The comments, each attached to one line of app.tsx.
 ```
 
-In the editor:
+In the editor, an annotated line shows a small marker. Hover the line to read the comment.
 
 ```text
-if (loading) return <Splash />;    ◌ comment
+if (!user) return <Login />;    ◌ comment
 ```
-
-Hover the line to read its comments. The label and highlighting are decorations, not source characters. Comments attach to physical source lines: no symbol-level documentation system, Markdown replacement, generated essays, or AST dependency.
 
 ## Install
 
-Build the VSIX (see below), then use **Extensions → … → Install from VSIX** and run **Developer: Reload Window**. From a shell:
+1. Build the extension: `npm run release` (see [DEVELOPMENT.md](DEVELOPMENT.md)).
+2. In VS Code: **Extensions → … → Install from VSIX**, pick `dist/line-comments-0.2.0.vsix`, then run **Developer: Reload Window**.
+   From a shell: `code --install-extension ./dist/line-comments-0.2.0.vsix --force`.
+3. Cursor has its own **Install from VSIX** action.
 
-```sh
-code --install-extension ./dist/line-comments-0.2.0.vsix --force
-```
+To try it, open the `examples` folder and hover lines 4 and 5 of `app.tsx`.
 
-Cursor uses its own VSIX installation action. This is an unsigned local package, not a Marketplace or Open VSX release.
+This is an unsigned local package. It is not published to the Marketplace or Open VSX.
 
-Open the `examples` folder and hover lines 4 and 5 in `app.tsx`. The example is a type-checkable editor fixture, not an executable React application.
+## Use it
 
-## Build and test
+Put the cursor on a line of a **saved** file and run **Line Comments: Add Comment at Line** (`Cmd+Alt+;` on macOS, `Ctrl+Alt+;` elsewhere). A draft opens beside the source. Write the comment and save the draft. Only the `.comment` file changes.
 
-Use Node.js 18.17+ with npm. Packaging also needs Python 3.9+. No dependency installation, compiler, or network access is required.
+Other commands (Command Palette, prefix **Line Comments:**):
 
-```sh
-npm test                 # Node tests, explicit file list (no shell glob dependency).
-npm run test:aliases     # Repeat through an aliased temporary directory.
-npm run check            # Syntax-check JavaScript.
-npm run verify           # All three checks above.
-npm run release          # verify, then build and cross-check dist/*.vsix, dist/*-source.zip, dist/SHA256SUMS.
-npm run package          # VSIX only, without running tests first.
-npm run benchmark        # Synthetic measurements in reports/.
-npm run clean            # Preview generated-file cleanup; deletes nothing.
-npm run clean -- --apply # Delete only recognized generated artifacts.
-```
-
-The release check verifies source/runtime byte equality, local runtime imports, manifest versions, archive integrity, and that the VSIX contains no tests, scripts, examples, or stale runtime files. For extension development, open this folder in VS Code and use the supplied F5 launch configuration.
-
-## Marker and highlight settings
-
-Defaults:
-
-```json
-{
-  "lineComments.showMarkers": true,
-  "lineComments.markerStyle": "label",
-  "lineComments.highlightStyle": "line",
-  "lineComments.showHoverMetadata": false
-}
-```
-
-| Setting | Choices |
+| Command | What it does |
 | --- | --- |
-| `markerStyle` | `label`: `◌ comment`; `icon`: `◌`; `off`: no marker. |
-| `showMarkers` | `false` hides any marker style. |
-| `highlightStyle` | `line`: subtle tint/left edge; `underline`; `off`. |
-| `showHoverMetadata` | `false`: comment text and necessary warnings; `true`: IDs, attachment status and reason. |
+| Edit Comment | Opens the comment on the current line as a draft. |
+| Delete Comment | Deletes it after confirmation. |
+| Mark Comment Reviewed | Confirms a comment that needs review still fits its line. |
+| Reattach Comment to This Line | Moves a lost or wrong comment to the current line. |
+| List File Comments | Jumps to any comment in the file. |
+| Open .comment Patch | Opens the raw sidecar file. |
+| Open Annotated Preview | Shows the source with comments inline. |
+| Copy Annotated Selection | Copies source plus comments, with line numbers. |
+| Check Workspace | Reports comments that need attention. |
+| Copy Agent Instructions / Copy Cursor MCP Configuration | See [Agents](#agents). |
 
-Needs-review annotations keep the circle and append `!`: `◌ comment !` or `◌ !`, with the warning highlight. Missing or ambiguous targets get no marker at an obsolete line. Multiple notes on one line share one marker. The hover starts with **Comment on line N** (or **2 comments on line N**) because the card can cover the line above; each note body then appears once.
+Save the source file (and its `.comment` file, if open) before adding or editing. If either changed since the draft opened, the save fails instead of overwriting.
 
-The extension contributes one hover provider and no decoration hover. It does not suppress diagnostics or other extensions' hovers. Highlight colors use the `lineComments.highlightBackground`, `highlightBorder`, `reviewBackground`, and `reviewBorder` theme tokens. Defaults are declared once in `package.json` and read by `src/extension/settings.js`; CLI and MCP versions also come from `package.json`.
+## How comments follow the code
 
-## Hide or nest `.comment` files
+Each comment remembers a fingerprint of its line and the two lines around it. No source text is copied into the `.comment` file.
 
-Sidecars are tucked under their source file in the Explorer by default (`app.tsx` → `app.tsx.comment`, collapsed). The extension does this by contributing default values, merged with VS Code's built-in nesting rules:
+| Status | Meaning | Shown as |
+| --- | --- | --- |
+| attached | The line is where it was. | `◌ comment` |
+| moved | Lines were added or removed above it; it followed. | `◌ comment` |
+| review | The line itself was edited, or only the line (not its neighbors) still matches. | `◌ comment !`, amber highlight |
+| ambiguous | Several lines match; the tool will not guess. | Warning, no marker |
+| detached | The line was deleted, split, or rewritten. | Warning, no marker |
+
+Use **Mark Comment Reviewed** or **Reattach Comment to This Line** to resolve the last three. "Attached" only means the position matched. It does not mean the comment is still true.
+
+Renaming a file in the editor renames its `.comment` file too. Renames outside the editor are not tracked; **Check Workspace** reports the orphaned sidecar.
+
+## Settings
+
+| Setting | Default | Choices |
+| --- | --- | --- |
+| `lineComments.markerStyle` | `label` | `label` shows `◌ comment`, `icon` shows `◌`, `off` hides markers. |
+| `lineComments.showMarkers` | `true` | `false` hides markers in any style. |
+| `lineComments.highlightStyle` | `line` | `line` (tint and left edge), `underline`, `off`. |
+| `lineComments.showHoverMetadata` | `false` | `true` adds the comment ID, status and reason to the hover. |
+
+The hover starts with **Comment on line N** so you can tell which line it belongs to, even when the card covers the line above.
+
+Colors are theme tokens you can override in `workbench.colorCustomizations`:
+`lineComments.highlightBackground`, `lineComments.highlightBorder`, `lineComments.reviewBackground`, `lineComments.reviewBorder`, `lineComments.sidecarForeground`.
+
+## Hiding `.comment` files
+
+By default each `.comment` file is dimmed and tucked, collapsed, under its source file in the Explorer. The extension does this by setting VS Code defaults:
 
 ```json
 {
@@ -81,79 +87,43 @@ Sidecars are tucked under their source file in the Explorer by default (`app.tsx
 }
 ```
 
-These are VS Code-wide settings, so the built-in nests (for example `.js` under `.ts`, lockfiles under `package.json`) also appear, collapsed. Setting any of them yourself takes precedence; if you define your own `explorer.fileNesting.patterns`, include `"*": "${capture}.comment"` in it. Nested sidecars are also dimmed using the `lineComments.sidecarForeground` theme color (default: the theme's disabled foreground), which you can override in `workbench.colorCustomizations`.
+- These are VS Code-wide settings, so VS Code's built-in nesting (such as lockfiles under `package.json`) also appears.
+- Anything you set yourself wins. If you define your own `explorer.fileNesting.patterns`, add `"*": "${capture}.comment"` to it.
+- To hide sidecars completely, add `"files.exclude": { "**/*.comment": true }`. Hovers, markers and agent tools keep working.
 
-To hide sidecars from the Explorer and search entirely:
+## Agents
 
-```json
-{
-  "files.exclude": { "**/*.comment": true }
-}
-```
+The extension does not change how an agent reads files. Give the agent a tool and instructions, then check that it uses them.
 
-Hover, markers, CLI and MCP keep working when sidecars are hidden. **Open .comment Patch** still opens a hidden file.
+**Instructions.** `node src/cli.js rules` prints them, and **Copy Agent Instructions** copies them for your `AGENTS.md` or a Cursor rule. They tell the agent how to read and write comments and what a good comment is:
+only non-obvious rules or reasons, in one or two sentences, attached to the line that enforces them.
 
-## Write and maintain comments
-
-Place the cursor on a saved source line and run **Line Comments: Add Comment at Line** (`Cmd+Alt+;` on macOS). A plain-text draft opens alongside the source. Write the comment and save: only the sibling `.comment` changes.
-
-Save the source and any existing sidecar before creating or editing a note. A draft based on stale source or sidecar revisions fails rather than overwriting newer changes. Keep compiler/linter directives, licenses, and other machine-significant comments in source.
-
-The command palette also provides **Edit Comment**, **Delete Comment**, **Mark Comment Reviewed**, **Reattach Comment to This Line**, **List File Comments**, **Open .comment Patch**, **Open Annotated Preview**, **Copy Annotated Selection**, and **Check Workspace**.
-
-Line tracking uses editor edit ranges and source fingerprints, not symbol names. Insertions above a target move its annotation. Changed targets require review; deleted, split, or ambiguous targets need explicit reattachment. Checks establish attachment status, **not the truth of a comment**.
-
-Editor file renames move the sibling sidecar without overwriting an existing destination. External renames and cross-file moves are not reconciled; inspect the checker output.
-
-## Sidecar format
-
-Per-line hunks with readable comment bodies and generated target/context fingerprints; source text is never copied into the sidecar. A sidecar that cannot be parsed is reported as an error and is never treated as empty or overwritten. **Do not run `git apply` on a `.comment` file.** See [FORMAT.md](FORMAT.md).
-
-## Agents: CLI or optional local MCP
-
-The extension does not intercept an agent's native file reader. Choose a tool/rule integration and verify the agent actually uses it.
+**CLI.** Run from this folder, or pass `--root /path/to/repo` for another repository:
 
 ```sh
-node src/cli.js --version
-node src/cli.js read examples/app.tsx --start 1 --end 8
-node src/cli.js read examples/app.tsx --start 1 --end 8 --mode comments
-node src/cli.js check examples/app.tsx
+node src/cli.js read examples/app.tsx --start 1 --end 8                   # source + comments
+node src/cli.js read examples/app.tsx --start 1 --end 8 --mode comments   # comments only
+node src/cli.js check examples/app.tsx                                    # attachment problems
+node src/cli.js --help                                                    # write commands
 ```
 
-For another repository, pass `--root /absolute/path/to/repository` and a source path relative to it. `read` combines source and comments with real line numbers and returns source/sidecar revision hashes. `--mode comments` avoids resending known source. `--comment-budget N` bounds comment-body characters and reports omissions; it is not a tokenizer.
+`read` prints real line numbers and two revision hashes. Every write needs both hashes from a fresh read, so an agent cannot overwrite changes it has not seen. `add` and `reanchor` also need the exact text of the target line.
 
-Writes require both hashes from a fresh read; `add`/`reanchor` also require the exact target line text. The CLI computes all sidecar metadata. Run `node src/cli.js --help` for write commands and `--text-file`.
+**MCP.** **Copy Cursor MCP Configuration** copies a server entry for `.cursor/mcp.json` (read-only or read-write). Tools: `line_comments_read`, `line_comments_check`, and `line_comments_write` when started with `--allow-write`. A VS Code example is in `integration/`. The copied paths point to this installation; copy again after moving it.
 
-The instructions (`lc rules`, or `integration/AGENTS.snippet.md`) also tell the agent what to write: only non-obvious rules or reasons, one or two sentences, attached to the line that enforces them, never a description of what the line does. In the editor, **Line Comments: Copy Agent Instructions** copies rules to merge into one instruction file (AGENTS.md or a Cursor rule). **Line Comments: Copy Cursor MCP Configuration** copies a read-only or sidecar-write server entry for `.cursor/mcp.json`. The tools are `line_comments_read`, `line_comments_check`, and (with `--allow-write`) `line_comments_write`. A VS Code MCP example is in `integration/`. Copied configurations contain absolute paths to this installation; copy them again after moving or reinstalling.
+Comment text is shown to agents as untrusted data, never as instructions.
 
-Neither route guarantees that an agent follows the instructions, and agent use does not imply inline-completion integration.
+## Limits
 
-## Tokens and performance
+- Source and `.comment` files: up to 2 MiB each, UTF-8 text only.
+- Up to 1000 comments per file and 16,000 characters per comment.
+- Dependency, build and VCS folders (`node_modules`, `dist`, `.git`, …) are skipped.
+- A `.comment` file that cannot be read is reported as an error. It is never treated as empty or overwritten.
+- Hovers make no network or model requests.
 
-Hovers make no model requests. Agents pay for returned comment text, tool definitions, and instructions. Combined reads avoid sending the source twice; comments-only reads avoid resending source already in context. No percentage saving is claimed.
+## More
 
-Unchanged revisions skip the relocation index, relocation builds its line-hash index lazily, hover reads a cached per-line map, the editor reuses the service's resolved snapshot when the buffer matches disk, and files without annotations skip edit-history hashing. See TESTING.md for the benchmark and its limits.
-
-## Project map
-
-```text
-src/core/          Note model, sidecar parser/serializer, fingerprints, matching, edit tracking, agent rendering.
-src/extension/     VS Code integration, settings, highlights, hovers, drafts, cache.
-src/node/          Workspace/filesystem constraints and guarded sidecar writes.
-src/cli.js         Command-line interface.
-src/mcp.js         Optional local stdio tool server.
-integration/       Agent instructions and client configuration examples.
-media/             Sidecar syntax grammar.
-examples/          Editor fixture.
-test/              Automated tests and golden fixtures.
-scripts/           Test runners, packaging, benchmarks, generated-file cleanup.
-dist/, reports/    Generated output; ignored.
-```
-
-`.comment` files, including detached notes, are user data, not cache. Cleanup never deletes them, source, `.git`, arbitrary documents, or active sidecar locks.
-
-## Limitations
-
-Editor tests use a **mocked VS Code API**; real VS Code/Cursor rendering, macOS/Windows extension hosts, agent adoption, token accounting, and hostile-process filesystem races are not certified. Files are limited to 2 MiB of UTF-8 text; generated/dependency directories are excluded. Revision guards protect against cooperating writers, not a malicious local process.
-
-See [TESTING.md](TESTING.md), [SECURITY.md](SECURITY.md), [ROADMAP.md](ROADMAP.md), and [REFERENCES.md](REFERENCES.md).
+- [FORMAT.md](FORMAT.md): the `.comment` file format.
+- [SECURITY.md](SECURITY.md): trust boundaries and what is not protected.
+- [DEVELOPMENT.md](DEVELOPMENT.md): build, test, release, code layout.
+- [ROADMAP.md](ROADMAP.md): what is missing before a 1.0.

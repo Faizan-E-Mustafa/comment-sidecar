@@ -30,7 +30,12 @@ class DraftProvider {
   }
   stat(uri) {
     const entry = this.get(uri);
-    return { type: vscode.FileType.File, ctime: entry.time, mtime: entry.time, size: Buffer.byteLength(entry.text) };
+    return {
+      type: vscode.FileType.File,
+      ctime: entry.time,
+      mtime: entry.time,
+      size: Buffer.byteLength(entry.text),
+    };
   }
   readFile(uri) {
     return Buffer.from(this.get(uri).text);

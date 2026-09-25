@@ -32,7 +32,11 @@ function sidecarDecoration(uri) {
     return undefined;
   }
 
-  const decoration = new vscode.FileDecoration(undefined, 'Line Comments sidecar', new vscode.ThemeColor('lineComments.sidecarForeground'));
+  const decoration = new vscode.FileDecoration(
+    undefined,
+    'Line Comments sidecar',
+    new vscode.ThemeColor('lineComments.sidecarForeground'),
+  );
   decoration.propagate = false;
   return decoration;
 }
@@ -66,10 +70,14 @@ function diagnosticsFor(document, results) {
     const message = result.line === null
       ? `External comment ${result.note.id} is ${result.status} (previously line ${result.note.line}). ${result.reason}`
       : `External comment at line ${result.line} needs review. ${result.reason}`;
-    const diagnostic = new vscode.Diagnostic(document.lineAt(line).range, message, vscode.DiagnosticSeverity.Warning);
+    const diagnostic = new vscode.Diagnostic(
+      document.lineAt(line).range,
+      message,
+      vscode.DiagnosticSeverity.Warning,
+    );
     diagnostic.source = 'Line Comments';
     diagnostic.code = result.note.id;
     return diagnostic;
   });
 }
-module.exports = { sidecarDecoration, hoverHeader, commentMarkdown, diagnosticsFor, markerText, markerDecorations };
+module.exports = { sidecarDecoration, hoverHeader, commentMarkdown, diagnosticsFor, markerDecorations };

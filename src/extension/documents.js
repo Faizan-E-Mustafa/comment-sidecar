@@ -40,7 +40,10 @@ async function hasDirtyDocument(paths) {
 async function sidecarRenameEdit(files) {
   const edit = new vscode.WorkspaceEdit();
   for (const file of files) {
-    if (file.oldUri.scheme !== 'file' || file.newUri.scheme !== 'file' || file.oldUri.fsPath.endsWith('.comment')) {
+    const skipRename = file.oldUri.scheme !== 'file'
+      || file.newUri.scheme !== 'file'
+      || file.oldUri.fsPath.endsWith('.comment');
+    if (skipRename) {
       continue;
     }
     if (!vscode.workspace.getWorkspaceFolder(file.newUri)) {

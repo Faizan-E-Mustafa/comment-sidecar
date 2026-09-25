@@ -37,7 +37,9 @@ class Store {
     this.saving = new Set();
   }
   supports(document) {
-    return document.uri.scheme === 'file' && !document.uri.fsPath.endsWith('.comment') && !!vscode.workspace.getWorkspaceFolder(document.uri);
+    return document.uri.scheme === 'file'
+      && !document.uri.fsPath.endsWith('.comment')
+      && !!vscode.workspace.getWorkspaceFolder(document.uri);
   }
   async get(document) {
     if (!this.supports(document)) {
@@ -66,9 +68,10 @@ class Store {
     const snapshot = await load(root, document.uri.fsPath);
     const current = document.getText();
     const entry = { snapshot, source: current, history: new Map(), version: document.version };
-    setResults(entry, current === snapshot.source ? snapshot.results : resolveNotes(current, snapshot.notes));
+    const unchanged = current === snapshot.source;
+    setResults(entry, unchanged ? snapshot.results : resolveNotes(current, snapshot.notes));
     if (entry.results.length) {
-      entry.history.set(current === snapshot.source ? snapshot.sourceHash : sourceHash(current), entry.results);
+      entry.history.set(unchanged ? snapshot.sourceHash : sourceHash(current), entry.results);
     }
 
     this.cache.set(document.uri.toString(), entry);
@@ -134,7 +137,8 @@ class Store {
       const snapshot = await load(entry.snapshot.root, entry.snapshot.sourcePath);
       entry.snapshot = snapshot;
       if (entry.version === version) {
-        setResults(entry, source === snapshot.source ? snapshot.results : resolveNotes(source, snapshot.notes));
+        const unchanged = source === snapshot.source;
+        setResults(entry, unchanged ? snapshot.results : resolveNotes(source, snapshot.notes));
       }
       this.onUpdate(document.uri);
     } catch (error) {

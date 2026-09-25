@@ -30,7 +30,11 @@ async function read(root, file, options = {}) {
 
   return {
     ...snapshot,
-    output: render(snapshot.source, snapshot.results, { ...options, file: snapshot.file, sidecarHash: snapshot.sidecarHash }),
+    output: render(snapshot.source, snapshot.results, {
+      ...options,
+      file: snapshot.file,
+      sidecarHash: snapshot.sidecarHash,
+    }),
   };
 }
 function requireSnapshot(snapshot, options) {
@@ -104,7 +108,14 @@ async function write(root, file, options) {
 
     const raw = serialize(path.basename(paths.sourcePath), notes);
     await atomicWrite(paths.sidecarPath, raw, snapshot.sidecarHash);
-    return { file: snapshot.file, id, count: notes.length, formatVersion: FORMAT_VERSION, source: snapshot.sourceHash, sidecar: hash(raw) };
+    return {
+      file: snapshot.file,
+      id,
+      count: notes.length,
+      formatVersion: FORMAT_VERSION,
+      source: snapshot.sourceHash,
+      sidecar: hash(raw),
+    };
   });
 }
 async function saveTracked(snapshot, source, results) {
@@ -126,7 +137,9 @@ async function saveTracked(snapshot, source, results) {
   });
 }
 async function check(root, file) {
-  const sidecars = file ? [`${(await resolveSource(root, file)).sourcePath}.comment`] : await findSidecars(root);
+  const sidecars = file
+    ? [`${(await resolveSource(root, file)).sourcePath}.comment`]
+    : await findSidecars(root);
   const reports = [];
 
   for (const sidecar of sidecars) {
@@ -136,7 +149,14 @@ async function check(root, file) {
     try {
       const snapshot = await load(root, target);
       for (const result of snapshot.results) {
-        reports.push({ file: snapshot.file, id: result.note.id, line: result.line, previousLine: result.note.line, status: result.status, reason: result.reason });
+        reports.push({
+          file: snapshot.file,
+          id: result.note.id,
+          line: result.line,
+          previousLine: result.note.line,
+          status: result.status,
+          reason: result.reason,
+        });
       }
     } catch (error) {
       reports.push({ file: display, status: 'error', reason: error.message });
@@ -144,6 +164,11 @@ async function check(root, file) {
   }
 
   const problems = reports.filter(report => ['review', 'detached', 'ambiguous', 'error'].includes(report.status));
-  return { files: sidecars.length, comments: reports.filter(report => report.id).length, problems: problems.length, reports };
+  return {
+    files: sidecars.length,
+    comments: reports.filter(report => report.id).length,
+    problems: problems.length,
+    reports,
+  };
 }
 module.exports = { load, read, write, check, saveTracked };

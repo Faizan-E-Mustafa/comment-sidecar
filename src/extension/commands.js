@@ -143,7 +143,8 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
   });
   command('preview', async () => {
     const { editor } = await current();
-    await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(previewUri(editor.document.uri)), {
+    const preview = await vscode.workspace.openTextDocument(previewUri(editor.document.uri));
+    await vscode.window.showTextDocument(preview, {
       viewColumn: vscode.ViewColumn.Beside,
       preview: false,
     });

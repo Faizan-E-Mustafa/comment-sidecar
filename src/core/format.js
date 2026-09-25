@@ -81,7 +81,9 @@ function parse(raw) {
     const note = {
       id: head[2], base: head[3], state: head[4], line: Number(head[1]),
       text: comments.join('\n'),
-      anchor: { before: Number(a[1]), after: Number(a[2]), strong: a[3] === '1', target: a[4], context: a[5] },
+      anchor: {
+        before: Number(a[1]), after: Number(a[2]), strong: a[3] === '1', target: a[4], context: a[5],
+      },
     };
     validate(note, ids);
     notes.push(note);

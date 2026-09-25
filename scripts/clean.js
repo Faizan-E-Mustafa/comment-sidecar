@@ -10,8 +10,12 @@ function findGeneratedFiles(root) {
   for (const folder of ['', 'dist', 'reports']) {
     const directory = path.join(root, folder);
     let stat;
-    try { stat = fs.lstatSync(directory); }
-    catch (error) { if (error.code === 'ENOENT') continue; throw error; }
+    try {
+      stat = fs.lstatSync(directory);
+    } catch (error) {
+      if (error.code === 'ENOENT') continue;
+      throw error;
+    }
     if (!stat.isDirectory() || stat.isSymbolicLink()) continue;
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       if (!entry.isFile() || entry.isSymbolicLink()) continue;
@@ -22,6 +26,7 @@ function findGeneratedFiles(root) {
   }
   return candidates.sort();
 }
+
 function clean(root, apply = false) {
   root = fs.realpathSync(root);
   const files = findGeneratedFiles(root);
@@ -29,22 +34,32 @@ function clean(root, apply = false) {
   for (const file of files) {
     const target = path.join(root, file);
     const parent = path.dirname(target);
-    if (fs.realpathSync(parent) !== parent) throw new Error(`Refusing aliased directory: ${parent}`);
+    if (fs.realpathSync(parent) !== parent) {
+      throw new Error(`Refusing aliased directory: ${parent}`);
+    }
     const stat = fs.lstatSync(target);
-    if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`Not a regular generated file: ${file}`);
+    if (!stat.isFile() || stat.isSymbolicLink()) {
+      throw new Error(`Not a regular generated file: ${file}`);
+    }
     fs.unlinkSync(target);
   }
   return files;
 }
+
 if (require.main === module) {
   try {
     const args = process.argv.slice(2);
-    if (args.some(arg => arg !== '--apply') || args.length > 1) throw new Error('Usage: npm run clean [-- --apply]');
+    if (args.some(arg => arg !== '--apply') || args.length > 1) {
+      throw new Error('Usage: npm run clean [-- --apply]');
+    }
     const apply = args.includes('--apply');
     const files = clean(path.resolve(__dirname, '..'), apply);
     console.log(apply ? 'Removed generated files:' : 'Preview only; no files deleted:');
     console.log(files.length ? files.join('\n') : '(none)');
     if (!apply) console.log('Run npm run clean -- --apply to remove only the listed artifacts.');
-  } catch (error) { console.error(error.message); process.exitCode = 2; }
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 2;
+  }
 }
 module.exports = { clean, findGeneratedFiles };

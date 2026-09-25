@@ -4,7 +4,17 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { hash } = require('../core/text');
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
-const IGNORED = new Set(['.git', 'node_modules', 'dist', 'build', '.next', '.venv', 'vendor', '.turbo', 'coverage']);
+const IGNORED = new Set([
+  '.git',
+  'node_modules',
+  'dist',
+  'build',
+  '.next',
+  '.venv',
+  'vendor',
+  '.turbo',
+  'coverage',
+]);
 
 function inside(root, file) {
   const relative = path.relative(root, file);
@@ -17,7 +27,8 @@ async function resolveSource(root, file) {
   const inRequestedRoot = inside(requestedRoot, requested);
   const inCanonicalRoot = inside(canonicalRoot, requested);
 
-  if (requested === requestedRoot || requested === canonicalRoot || (!path.isAbsolute(file) && !inRequestedRoot)) {
+  const outsideRequestedRoot = !path.isAbsolute(file) && !inRequestedRoot;
+  if (requested === requestedRoot || requested === canonicalRoot || outsideRequestedRoot) {
     throw new Error('File must be inside the selected workspace.');
   }
   if (requested.endsWith('.comment') || /[\r\n\0]/.test(requested)) {
@@ -43,7 +54,9 @@ async function resolveSource(root, file) {
   const absolute = path.join(parent, path.basename(requested));
 
   if (!inside(canonicalRoot, absolute) || absolute === canonicalRoot) {
-    throw new Error(lexicalRoot ? 'Symlinks may not escape the workspace.' : 'File must be inside the selected workspace.');
+    throw new Error(lexicalRoot
+      ? 'Symlinks may not escape the workspace.'
+      : 'File must be inside the selected workspace.');
   }
   if (path.relative(canonicalRoot, absolute).split(path.sep).some(part => IGNORED.has(part))) {
     throw new Error('Generated, dependency, and VCS directories are excluded.');
@@ -59,7 +72,12 @@ async function resolveSource(root, file) {
     throw new Error('Symlinks may not escape the workspace.');
   }
 
-  return { root: canonicalRoot, sourcePath: real, sidecarPath: `${real}.comment`, file: path.relative(canonicalRoot, real).split(path.sep).join('/') };
+  return {
+    root: canonicalRoot,
+    sourcePath: real,
+    sidecarPath: `${real}.comment`,
+    file: path.relative(canonicalRoot, real).split(path.sep).join('/'),
+  };
 }
 async function readText(file, optional = false) {
   let handle;

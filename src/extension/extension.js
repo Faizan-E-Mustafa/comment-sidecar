@@ -3,7 +3,9 @@ const vscode = require('vscode');
 const path = require('node:path');
 const { Store } = require('./store');
 const { DraftProvider } = require('./drafts');
-const { sidecarDecoration, hoverHeader, commentMarkdown, diagnosticsFor, markerDecorations } = require('./presentation');
+const {
+  sidecarDecoration, hoverHeader, commentMarkdown, diagnosticsFor, markerDecorations,
+} = require('./presentation');
 const { createHighlights } = require('./highlights');
 const { readSettings } = require('./settings');
 const { render } = require('../core/render');
@@ -72,7 +74,8 @@ function activate(context) {
       return;
     }
 
-    const pending = entry.results.filter(item => ['review', 'ambiguous', 'detached'].includes(item.status)).length;
+    const pending = entry.results
+      .filter(item => ['review', 'ambiguous', 'detached'].includes(item.status)).length;
     if (!pending) {
       status.hide();
       return;
@@ -160,7 +163,10 @@ function activate(context) {
             vscode.workspace.getConfiguration('lineComments', document.uri),
           );
           const line = position.line + 1;
-          const contents = [hoverHeader(line, items.length), ...items.map(item => commentMarkdown(item, { showMetadata }))];
+          const contents = [
+            hoverHeader(line, items.length),
+            ...items.map(item => commentMarkdown(item, { showMetadata })),
+          ];
           return new vscode.Hover(contents, document.lineAt(position.line).range);
         } catch (error) {
           log(error);

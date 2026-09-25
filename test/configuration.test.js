@@ -49,7 +49,9 @@ test('CLI version and help match the package being shipped', () => {
     assert.equal(result.status, 0, result.stderr);
     assert.ok(result.stdout.includes(manifest.version));
     assert.equal(result.stderr, '');
-    if (flag === '--version') assert.equal(result.stdout.trim(), manifest.version);
+    if (flag === '--version') {
+      assert.equal(result.stdout.trim(), manifest.version);
+    }
   }
   assert.equal(argumentsOf(['--version']).flags.version, true);
 });

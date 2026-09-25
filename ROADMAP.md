@@ -1,16 +1,36 @@
-# Before a public 1.0 release
+# Roadmap
+
+What is missing before a public 1.0.
 
 ## Desktop validation
-Run real VS Code and Cursor extension-host tests on macOS, Windows and Linux. Validate virtual comment editor saving, filesystem notifications, undo/redo across saves, source renames, multi-root workspaces, remote extension hosts, large files, rapid edits, conflicts and focus behavior. Add a maintained VS Code test runner and CI once package downloads and desktop binaries are available. This build's editor API tests use mocks.
+
+- Run the extension in real VS Code and Cursor on macOS, Windows and Linux. Current editor tests use a mocked API.
+- Cover the draft editor, file watchers, undo across saves, renames, multi-root workspaces, remote hosts, large files and rapid edits.
+- Add a VS Code test runner and CI.
 
 ## Reliability
-Expand property/fuzz coverage for pathological edits and repeated source fragments. Improve branch-switch behavior with optional Git base retrieval and explicit migration records, without silently guessing semantic identity. Add cross-file move assistance with confirmation, persistent review history, conflict UI instead of output-only auto-save failures, and better multi-editor concurrency tests.
 
-## Agent adoption
-Run the same edit tasks with different agent clients and models. Measure whether the agent chooses the context reader, whether it preserves constraints, token usage, stale-comment detection and task success. Native file reads remain untouched in this build. A future client-specific hook must be based on that client's supported API; do not claim universal interception. A custom agent harness can enforce one combined read path.
+- More property and fuzz tests for unusual edits and repeated code.
+- Better behavior when switching branches.
+- Help for moving comments across files, with confirmation.
+- A conflict UI instead of messages in the output panel.
+- More tests with several editors writing at once.
 
-## Packaging and maintenance
-Convert implementation to strict TypeScript if desired, add declaration/lint checking and a supported MCP SDK when introducing more protocol features. The present runtime is dependency-free CommonJS. Add signed release tooling, registered publisher identity, Marketplace/Open VSX distribution, upgrade-safe MCP registration and monitored compatibility matrices after desktop validation.
+## Agents
 
-## Deliberately not the product
-No Markdown knowledge base in place of line comments. No symbol-only anchoring. No generated paragraph on every line. No model calls for hover. No runtime/source transformation. No line-remapping hidden behind a "high confidence" semantic promise.
+- Run the same tasks with different agents and models. Measure whether they use the reader, keep documented constraints, notice stale comments, and how many tokens they use.
+- Client-specific hooks only through each client's supported API.
+
+## Packaging
+
+- Optional strict TypeScript and linting; an MCP SDK if the protocol surface grows.
+- Signed releases, a registered publisher, Marketplace and Open VSX publishing.
+
+## Not planned
+
+- Replacing line comments with a Markdown knowledge base.
+- Anchoring to symbols instead of lines.
+- Generated comments on every line.
+- Model calls from the hover.
+- Changing source files.
+- "Smart" line matching that hides guesses behind a confidence score.

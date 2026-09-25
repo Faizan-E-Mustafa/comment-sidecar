@@ -8,6 +8,6 @@ node_modules/**
 dist/**
 reports/**
 examples/**
-TESTING.md
+DEVELOPMENT.md
 ROADMAP.md
-REFERENCES.md
+AGENTS.md
