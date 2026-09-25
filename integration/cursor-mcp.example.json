@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "line-comments": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["/absolute/path/to/line-comments/src/mcp.js", "--root", "${workspaceFolder}", "--allow-write"]
+    }
+  }
+}

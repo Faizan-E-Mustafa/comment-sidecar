@@ -1,0 +1,9 @@
+test/**
+scripts/**
+.vscode/**
+.git/**
+node_modules/**
+*.vsix
+*.zip
+BENCHMARK.json
+TEST-RESULTS.txt

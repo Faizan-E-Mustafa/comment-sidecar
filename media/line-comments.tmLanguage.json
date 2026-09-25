@@ -1,0 +1,10 @@
+{
+  "scopeName": "source.line-comments",
+  "patterns": [
+    { "match": "^#.*$", "name": "comment.line.number-sign" },
+    { "match": "^(---|\\+\\+\\+).*$", "name": "entity.name.filename" },
+    { "match": "^@@.*$", "name": "meta.diff.header" },
+    { "match": "^\\+//.*$", "name": "markup.inserted.diff" },
+    { "match": "^ .*$", "name": "source" }
+  ]
+}

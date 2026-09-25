@@ -1,0 +1,62 @@
+{
+  "node": "v22.16.0",
+  "platform": "linux",
+  "arch": "x64",
+  "cpu": "AMD EPYC 9V74 80-Core Processor",
+  "measuredAt": "2026-09-24T22:29:05.113Z",
+  "method": "Warm single-process microbenchmarks; 100 samples (1000 for hover); not end-to-end editor latency.",
+  "reports": [
+    {
+      "lineCount": 1000,
+      "noteCount": 20,
+      "sourceBytes": 32779,
+      "sidecarBytes": 7161,
+      "parse": {
+        "medianMs": 0.038,
+        "p95Ms": 0.137
+      },
+      "resolveExternalEdit": {
+        "medianMs": 0.188,
+        "p95Ms": 0.372
+      },
+      "trackEditorInsertion": {
+        "medianMs": 0.217,
+        "p95Ms": 0.332
+      },
+      "hoverLookup": {
+        "medianMs": 0,
+        "p95Ms": 0
+      },
+      "render200Lines": {
+        "medianMs": 0.102,
+        "p95Ms": 0.248
+      }
+    },
+    {
+      "lineCount": 10000,
+      "noteCount": 200,
+      "sourceBytes": 347779,
+      "sidecarBytes": 73569,
+      "parse": {
+        "medianMs": 0.149,
+        "p95Ms": 0.297
+      },
+      "resolveExternalEdit": {
+        "medianMs": 2.4,
+        "p95Ms": 3.649
+      },
+      "trackEditorInsertion": {
+        "medianMs": 2.407,
+        "p95Ms": 4.062
+      },
+      "hoverLookup": {
+        "medianMs": 0.001,
+        "p95Ms": 0.001
+      },
+      "render200Lines": {
+        "medianMs": 0.863,
+        "p95Ms": 1.788
+      }
+    }
+  ]
+}

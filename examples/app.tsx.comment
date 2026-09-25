@@ -1,0 +1,17 @@
+# line-comments v1
+--- app.tsx
++++ app.tsx.annotated
+@@ -2,5 +2,6 @@ id=lc_loading base=87b52c897d7e060c8922957d1e3de32c8d9a0f612f456bb210607cfb7cd46da2 state=attached
+   const { user, loading } = useSession();
+ 
++// Wait for session restoration before choosing a screen.
+   if (loading) return <Splash />;
+   if (!user) return <Login />;
+ 
+@@ -3,5 +3,6 @@ id=lc_login base=87b52c897d7e060c8922957d1e3de32c8d9a0f612f456bb210607cfb7cd46da2 state=attached
+ 
+   if (loading) return <Splash />;
++// A missing user means signed out only after loading finishes.
+   if (!user) return <Login />;
+ 
+   return <Dashboard user={user} />;
