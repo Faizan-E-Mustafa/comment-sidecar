@@ -1,6 +1,6 @@
 # Line Comments
 
-Per-line comments stored next to code, not inside it. **Consolidated release 0.1.4.**
+Per-line comments stored next to code, not inside it. **Release 0.2.0: v2 sidecars only.**
 
 ```text
 app.tsx          Source, never written by this tool.
@@ -17,14 +17,14 @@ Hover the line to read its comments. The label and highlighting are decorations,
 
 ## Start with the complete release
 
-Extract `line-comments-0.1.4-source.zip` into a **new directory**. It creates `line-comments-0.1.4/`. Do not apply any older patch, copy isolated modules, or extract over your partly patched folder. Keep the old directory until you have recovered any independent edits or sidecars you need.
+Extract `line-comments-0.2.0-source.zip` into a **new directory**. It creates `line-comments-0.2.0/`. Do not apply any older patch, copy isolated modules, or extract over your partly patched folder. Keep the old directory until you have recovered any independent edits or sidecars you need, and convert any v1 sidecars with it first (see [Sidecar format](#sidecar-format)).
 
-The accompanying `line-comments-0.1.4.vsix` is built from this same source. Install it using **Extensions → … → Install from VSIX**, then run **Developer: Reload Window**. The existing extension ID is retained: `line-comments-local.line-comments`. Existing user/workspace settings remain in effect.
+The accompanying `line-comments-0.2.0.vsix` is built from this same source. Install it using **Extensions → … → Install from VSIX**, then run **Developer: Reload Window**. The existing extension ID is retained: `line-comments-local.line-comments`. Existing user/workspace settings remain in effect.
 
 In VS Code, the shell installation equivalent is:
 
 ```sh
-code --install-extension ./line-comments-0.1.4.vsix --force
+code --install-extension ./line-comments-0.2.0.vsix --force
 ```
 
 Cursor is a separate desktop validation target. Use its VSIX installation action. This is an unsigned local package, not a published Marketplace or Open VSX release.
@@ -36,15 +36,15 @@ Open this release's `examples` folder and hover lines 4 and 5 in `app.tsx`. The 
 Use Node.js 18.17+ with npm. Packaging also needs Python 3.9+. No dependency installation, compiler, or network access is required for the supplied build scripts.
 
 ```sh
-cd line-comments-0.1.4
+cd line-comments-0.2.0
 npm run release
 ```
 
 That runs the regular test suite, the directory-alias regression suite, and JavaScript syntax checks. It then creates and cross-checks:
 
 ```text
-dist/line-comments-0.1.4.vsix
-dist/line-comments-0.1.4-source.zip
+dist/line-comments-0.2.0.vsix
+dist/line-comments-0.2.0-source.zip
 dist/SHA256SUMS
 ```
 
@@ -101,15 +101,15 @@ The command palette also provides **Edit Comment**, **Delete Comment**, **Mark C
 
 Source-line tracking is based on editor edit ranges and source context/fingerprints, not symbol names. Normal insertions above a target move its annotation. Changed targets require review; deleted, split, or ambiguous targets may need explicit reattachment. Checks establish attachment status, **not the truth of a comment**. A comment can become wrong when requirements or dependencies change even if its source line stays identical.
 
-Editor file renames include sibling-sidecar rename edits without overwriting an existing destination. External renames and cross-file moves are not magically reconciled; inspect the checker output. Old-format conversion is explicit and never performed on startup.
+Editor file renames include sibling-sidecar rename edits without overwriting an existing destination. External renames and cross-file moves are not magically reconciled; inspect the checker output.
 
-## Sidecar formats
+## Sidecar format
 
-**New files use format 2:** per-line hunks, readable comment bodies, and generated target/context fingerprints. Source text is not copied into the sidecar automatically.
+Sidecars use format 2: per-line hunks, readable comment bodies, and generated target/context fingerprints. Source text is not copied into the sidecar.
 
-**Existing format 1 files remain supported:** they hold copied source context around the comment. To convert, back up the sidecar, open its saved source, and run **Line Comments: Remove Copied Code from .comment**. Confirmation and fresh revision checks are required. This release introduces no third format.
+**Format 1 is no longer supported.** Since 0.2.0, a `# line-comments v1` sidecar is reported as an unsupported legacy file, shows no markers, and is never rewritten. Convert any remaining v1 files with 0.1.4 before upgrading; see [FORMAT.md](FORMAT.md#upgrading-from-v1).
 
-Both are custom comment-only formats. **Do not run `git apply` on a `.comment` file.** They are not source patches and are not Markdown documentation. See [FORMAT.md](FORMAT.md).
+It is a custom comment-only format. **Do not run `git apply` on a `.comment` file.** They are not source patches and are not Markdown documentation. See [FORMAT.md](FORMAT.md).
 
 ## Agents: CLI or optional local MCP
 
@@ -140,12 +140,12 @@ The CLI/rule route does not require MCP. Neither route guarantees that third-par
 
 Editor hovers make no model requests and therefore use no model tokens from this extension. Agents still pay for returned comment text, tool definitions, instructions and invocation wrappers. Combined reads avoid sending the source twice; comments-only reads avoid resending source already in context. There is no promised percentage saving.
 
-The inherited performance improvements remain: lazy full fingerprint indexing, direct cached per-line hover lookup, resolved-snapshot reuse, and no edit-history hashing for files without annotations. No new comparative speedup is claimed for 0.1.4. [PERFORMANCE.md](PERFORMANCE.md) preserves the earlier synthetic benchmark methodology and its limitations.
+The inherited performance improvements remain: lazy full fingerprint indexing, direct cached per-line hover lookup, resolved-snapshot reuse, and no edit-history hashing for files without annotations. Removing v1 support in 0.2.0 measured flat within noise; no speedup is claimed. [PERFORMANCE.md](PERFORMANCE.md) preserves the earlier synthetic benchmark methodology and its limitations.
 
 ## Project map
 
 ```text
-src/core/          Formats, line fingerprints, matching, edit tracking, agent rendering.
+src/core/          Note model, v2 parser/serializer, fingerprints, matching, edit tracking, agent rendering.
 src/extension/     VS Code integration, settings, highlights, hovers, drafts, cache.
 src/node/          Workspace/filesystem constraints and guarded sidecar writes.
 src/cli.js         Command-line interface.
@@ -159,7 +159,7 @@ dist/              Generated releases; ignored.
 reports/           Generated test/benchmark output; ignored.
 ```
 
-Keep both format implementations and the tests. `.comment` files, including detached notes, are user data—not disposable cache files. Cleanup does not delete them, source, `.git`, arbitrary documents, or active sidecar locks.
+Keep the tests and fixtures. `.comment` files, including detached notes, are user data—not disposable cache files. Cleanup does not delete them, source, `.git`, arbitrary documents, or active sidecar locks.
 
 ## Validation and limitations
 

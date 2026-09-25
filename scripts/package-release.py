@@ -73,11 +73,14 @@ def validate(vsix, source, files):
                     raise RuntimeError(f'Runtime file missing from VSIX: {relative}')
                 if extension.read(f'extension/{relative}') != original:
                     raise RuntimeError(f'Runtime byte mismatch: {relative}')
+        runtime = {file.relative_to(ROOT).as_posix() for file in files}
         for name in names:
             if name.startswith('extension/'):
                 relative = name[len('extension/'):]
                 if relative.startswith(('test/', 'scripts/', 'examples/', 'dist/', 'reports/')):
                     raise RuntimeError(f'Development/build file leaked into VSIX: {relative}')
+                if relative.startswith(('src/', 'media/', 'integration/')) and relative not in runtime:
+                    raise RuntimeError(f'Stale runtime file in VSIX: {relative}')
             if not name.startswith('extension/src/') or not name.endswith('.js'):
                 continue
             text = extension.read(name).decode('utf-8')

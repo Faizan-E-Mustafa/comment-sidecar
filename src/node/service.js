@@ -1,6 +1,7 @@
 'use strict';
 const path = require('node:path');
-const { parse, serialize, createNote, assertComment, sidecarVersion } = require('../core/format');
+const { parse, serialize, FORMAT_VERSION } = require('../core/format');
+const { createNote, normalizeComment } = require('../core/note');
 const { sourceHash, hash, linesOf, assertLine } = require('../core/text');
 const { resolveNotes, rebaseNotes } = require('../core/anchors');
 const { render } = require('../core/render');
@@ -10,7 +11,7 @@ async function load(root, file) {
   const paths = await resolveSource(root, file);
   const [source, raw] = await Promise.all([readText(paths.sourcePath), readText(paths.sidecarPath, true)]);
   const notes = raw === null ? [] : parse(raw).notes;
-  return { ...paths, source, raw, notes, formatVersion: sidecarVersion(raw), sourceHash: sourceHash(source), sidecarHash: hash(raw ?? ''), results: resolveNotes(source, notes) };
+  return { ...paths, source, raw, notes, sourceHash: sourceHash(source), sidecarHash: hash(raw ?? ''), results: resolveNotes(source, notes) };
 }
 async function read(root, file, options = {}) {
   const snapshot = await load(root, file);
@@ -26,7 +27,6 @@ async function write(root, file, options) {
     const snapshot = await load(root, file);
     requireSnapshot(snapshot, options);
     let notes = [...snapshot.notes];
-    let version = snapshot.formatVersion;
     let id = options.id;
     const index = notes.findIndex(note => note.id === id);
     if (['update', 'remove', 'reanchor', 'review'].includes(options.operation) && index < 0) throw new Error('Unknown comment ID.');
@@ -40,7 +40,7 @@ async function write(root, file, options) {
         const note = createNote(snapshot.source, options.line, options.text);
         notes.push(note); id = note.id; break;
       }
-      case 'update': assertComment(options.text); notes[index] = { ...notes[index], text: options.text.replace(/\r\n/g, '\n') }; break;
+      case 'update': notes[index] = { ...notes[index], text: normalizeComment(options.text) }; break;
       case 'remove': notes.splice(index, 1); break;
       case 'reanchor': notes[index] = createNote(snapshot.source, options.line, notes[index].text, { id }); break;
       case 'review': {
@@ -49,21 +49,18 @@ async function write(root, file, options) {
         notes[index] = createNote(snapshot.source, resolved.line, notes[index].text, { id }); break;
       }
       case 'sync': notes = rebaseNotes(snapshot.source, snapshot.results); break;
-      case 'compact':
-        if (snapshot.raw === null) throw new Error('This source has no .comment sidecar to convert.');
-        version = 2; break;
-      default: throw new Error('Operation must be add, update, remove, reanchor, review, sync, or compact.');
+      default: throw new Error('Operation must be add, update, remove, reanchor, review, or sync.');
     }
     if (sourceHash(await readText(paths.sourcePath)) !== snapshot.sourceHash) throw new Error('Source changed while writing. Retry.');
-    const raw = serialize(path.basename(paths.sourcePath), notes, { version });
+    const raw = serialize(path.basename(paths.sourcePath), notes);
     await atomicWrite(paths.sidecarPath, raw, snapshot.sidecarHash);
-    return { file: snapshot.file, id, count: notes.length, formatVersion: version, source: snapshot.sourceHash, sidecar: hash(raw) };
+    return { file: snapshot.file, id, count: notes.length, formatVersion: FORMAT_VERSION, source: snapshot.sourceHash, sidecar: hash(raw) };
   });
 }
 async function saveTracked(snapshot, source, results) {
   return withLock(snapshot.sidecarPath, async () => {
     if (sourceHash(await readText(snapshot.sourcePath)) !== sourceHash(source)) throw new Error('Source changed before tracked comments could be saved.');
-    const raw = serialize(path.basename(snapshot.sourcePath), rebaseNotes(source, results), { version: snapshot.formatVersion });
+    const raw = serialize(path.basename(snapshot.sourcePath), rebaseNotes(source, results));
     if (hash((await readText(snapshot.sidecarPath, true)) ?? '') !== snapshot.sidecarHash) throw new Error('Sidecar changed concurrently. Read again before syncing.');
     if (raw === snapshot.raw) return;
     await atomicWrite(snapshot.sidecarPath, raw, snapshot.sidecarHash);

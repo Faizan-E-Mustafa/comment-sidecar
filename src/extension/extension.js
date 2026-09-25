@@ -4,12 +4,12 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { Store } = require('./store');
 const { DraftProvider } = require('./drafts');
-const { commentMarkdown, diagnosticsFor, markerText } = require('./presentation');
+const { commentMarkdown, diagnosticsFor, markerDecorations } = require('./presentation');
 const { createHighlights } = require('./highlights');
 const { readSettings } = require('./settings');
 const { render } = require('../core/render');
 const service = require('../node/service');
-const { matchingDocuments, hasDirtyDocument } = require('./documents');
+const { matchingDocuments, hasDirtyDocument, sidecarRenameEdit } = require('./documents');
 
 function activate(context) {
   const output = vscode.window.createOutputChannel('Line Comments');
@@ -57,25 +57,11 @@ function activate(context) {
       const entry = await store.get(document);
       if (!entry) { clearPresentation(uri); return; }
       diagnostics.set(uri, diagnosticsFor(document, entry.results));
-      const options = [];
-      const { showMarkers, markerStyle, highlightStyle } = readSettings(
-        vscode.workspace.getConfiguration('lineComments', uri),
-      );
-      if (showMarkers && markerStyle !== 'off') {
-        for (const [line, notes] of entry.byLine) {
-          if (line < 1 || line > document.lineCount) continue;
-          const needsReview = notes.some(item => item.status === 'review');
-          options.push({
-            range: document.lineAt(line - 1).range,
-            renderOptions: {
-              after: { contentText: markerText(needsReview, markerStyle) },
-            },
-          });
-        }
-      }
+      const settings = readSettings(vscode.workspace.getConfiguration('lineComments', uri));
+      const options = markerDecorations(document, entry.byLine, settings);
       for (const editor of vscode.window.visibleTextEditors) {
         if (editor.document.uri.toString() !== uri.toString()) continue;
-        highlights.apply(editor, entry.results, highlightStyle);
+        highlights.apply(editor, entry.results, settings.highlightStyle);
         editor.setDecorations(decoration, options);
       }
       if (vscode.window.activeTextEditor?.document.uri.toString() !== uri.toString()) return;
@@ -143,25 +129,6 @@ function activate(context) {
   command('remove', () => mutate('remove'));
   command('review', () => mutate('review'));
   command('reanchor', () => mutate('reanchor', true));
-  command('compact', async () => {
-    const { editor, root } = await current(true);
-    const snapshot = await service.load(root, editor.document.uri.fsPath);
-    if (snapshot.raw === null) throw new Error('This source has no .comment sidecar to convert.');
-    if (snapshot.formatVersion === 2) {
-      void vscode.window.showInformationMessage('This .comment file already uses code-free fingerprints.'); return;
-    }
-    const choice = await vscode.window.showWarningMessage(
-      'Replace copied source context with fingerprints in this .comment file? Comments and attachment states are preserved. Older extension versions cannot read v2. Commit or back up the sidecar first.',
-      { modal: true }, 'Convert to code-free format');
-    if (choice !== 'Convert to code-free format') return;
-    if (!vscode.workspace.isTrusted) throw new Error('Trust this workspace before changing comments.');
-    if (await hasDirtyDocument([snapshot.sourcePath, snapshot.sidecarPath])) throw new Error('Save the source and sidecar before converting.');
-    await service.write(root, snapshot.sourcePath, {
-      operation: 'compact', expectedSource: snapshot.sourceHash, expectedSidecar: snapshot.sidecarHash,
-    });
-    store.invalidate(editor.document.uri); updated(editor.document.uri);
-    void vscode.window.showInformationMessage('Converted .comment to v2. Source code was not changed.');
-  });
   command('openSidecar', async () => {
     const { editor } = await current();
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(vscode.Uri.file(`${editor.document.uri.fsPath}.comment`)), { viewColumn: vscode.ViewColumn.Beside });
@@ -251,21 +218,7 @@ function activate(context) {
     vscode.window.onDidChangeVisibleTextEditors(editors => { for (const editor of editors) updated(editor.document.uri); }),
     vscode.workspace.onDidChangeConfiguration(event => { if (event.affectsConfiguration('lineComments')) for (const editor of vscode.window.visibleTextEditors) updated(editor.document.uri); }),
     vscode.workspace.onWillRenameFiles(event => {
-      if (!vscode.workspace.isTrusted) return;
-      event.waitUntil((async () => {
-        const edit = new vscode.WorkspaceEdit();
-        for (const file of event.files) {
-          if (file.oldUri.scheme !== 'file' || file.newUri.scheme !== 'file' || file.oldUri.fsPath.endsWith('.comment')) continue;
-          if (!vscode.workspace.getWorkspaceFolder(file.newUri)) continue;
-          const oldSidecar = vscode.Uri.file(`${file.oldUri.fsPath}.comment`), newSidecar = vscode.Uri.file(`${file.newUri.fsPath}.comment`);
-          try {
-            await vscode.workspace.fs.stat(oldSidecar);
-            if (event.files.some(item => item.oldUri.toString() === oldSidecar.toString())) continue;
-            edit.renameFile(oldSidecar, newSidecar, { overwrite: false });
-          } catch {}
-        }
-        return edit;
-      })());
+      if (vscode.workspace.isTrusted) event.waitUntil(sidecarRenameEdit(event.files));
     }),
   );
   const watcher = vscode.workspace.createFileSystemWatcher('**/*.comment');

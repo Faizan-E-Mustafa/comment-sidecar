@@ -20,10 +20,6 @@
     {
       "match": "^\\+//.*$",
       "name": "markup.inserted.diff"
-    },
-    {
-      "match": "^ .*$",
-      "name": "source"
     }
   ]
 }

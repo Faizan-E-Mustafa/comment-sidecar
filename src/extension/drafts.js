@@ -3,7 +3,7 @@ const vscode = require('vscode');
 const { randomUUID } = require('node:crypto');
 const path = require('node:path');
 const { write } = require('../node/service');
-const { assertComment } = require('../core/format');
+const { assertComment } = require('../core/note');
 const { hasDirtyDocument } = require('./documents');
 
 class DraftProvider {

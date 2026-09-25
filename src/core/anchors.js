@@ -1,7 +1,7 @@
 'use strict';
 const { linesOf, sourceHash, hash } = require('./text');
-const { createNote } = require('./format');
-const { fingerprintOf, contextHash } = require('./fingerprints');
+const { createNote } = require('./note');
+const { contextHash } = require('./fingerprints');
 
 function resolveNotes(source, notes) {
   if (!notes.length) return [];
@@ -27,7 +27,8 @@ function resolveNotes(source, notes) {
     return positionsByHash.get(target) || [];
   }
   return notes.map(note => {
-    const anchor = fingerprintOf(note);
+    const anchor = note.anchor;
+    if (!anchor) throw new Error(`Comment ${note.id} has no anchor fingerprint.`);
     const result = (line, status, reason) => ({ note, line, status, reason });
     if (note.state === 'detached') return result(null, 'detached', 'Target was detached by an editor change; reattach explicitly.');
     if (note.base === base && digestOf(lines[note.line - 1]) === anchor.target) return result(note.line, note.state, 'Source matches the recorded revision.');

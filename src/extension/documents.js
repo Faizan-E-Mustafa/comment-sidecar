@@ -24,4 +24,18 @@ async function matchingDocuments(paths, dirtyOnly = false) {
 async function hasDirtyDocument(paths) {
   return (await matchingDocuments(paths, true)).some(document => document.isDirty);
 }
-module.exports = { identity, matchingDocuments, hasDirtyDocument };
+async function sidecarRenameEdit(files) {
+  const edit = new vscode.WorkspaceEdit();
+  for (const file of files) {
+    if (file.oldUri.scheme !== 'file' || file.newUri.scheme !== 'file' || file.oldUri.fsPath.endsWith('.comment')) continue;
+    if (!vscode.workspace.getWorkspaceFolder(file.newUri)) continue;
+    const oldSidecar = vscode.Uri.file(`${file.oldUri.fsPath}.comment`), newSidecar = vscode.Uri.file(`${file.newUri.fsPath}.comment`);
+    try {
+      await vscode.workspace.fs.stat(oldSidecar);
+      if (files.some(item => item.oldUri.toString() === oldSidecar.toString())) continue;
+      edit.renameFile(oldSidecar, newSidecar, { overwrite: false });
+    } catch {}
+  }
+  return edit;
+}
+module.exports = { identity, matchingDocuments, hasDirtyDocument, sidecarRenameEdit };

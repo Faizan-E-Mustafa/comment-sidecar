@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.0 — v2-only runtime
+
+**Breaking:** format 1 (`# line-comments v1`) sidecars are no longer read, written or converted. They are reported as "Unsupported legacy line-comments v1 sidecar", show no markers or hover, and are never treated as empty or overwritten. Convert remaining v1 files with 0.1.4 (`lc compact` or **Remove Copied Code from .comment**) before upgrading.
+
+- Removes the v1 parser/serializer, dual-format dispatch, the internal serializer `version` option, the service `compact` operation, `lc compact`, and the `lineComments.compact` command.
+- Adds `src/core/note.js` for note creation, comment validation and limits; `createNote` now returns the fingerprint-anchored shape directly. `src/core/format.js` is the single v2 parser/serializer; `format-v1.js` and `format-v2.js` are removed. Notes without a valid anchor are rejected instead of converted.
+- Removes the v1 copied-context rule from the sidecar grammar and the v1 branch from the benchmark.
+- v2 syntax, hashes, context widths, limits, IDs, ordering, marker/highlight/hover behavior, and CLI/MCP tools are unchanged; write responses still report `formatVersion: 2`. Golden sidecars written by 0.1.4 re-serialize byte-identically.
+- Adds tests proving legacy and malformed sidecars stay byte-identical across every write path, CLI, and editor save.
+
 ## 0.1.4 — consolidated source release
 
 - Ships a complete source archive and byte-matched VSIX; no patch chain or local merge is required.

@@ -14,7 +14,6 @@ lc remove FILE --id ID --source-hash HASH --sidecar-hash HASH
 lc reanchor FILE --id ID --line N --expected-text TEXT --source-hash HASH --sidecar-hash HASH
 lc review FILE --id ID --source-hash HASH --sidecar-hash HASH
 lc sync FILE --source-hash HASH --sidecar-hash HASH
-lc compact FILE --source-hash HASH --sidecar-hash HASH
 lc check [FILE] [--json]
 lc rules
 lc --version

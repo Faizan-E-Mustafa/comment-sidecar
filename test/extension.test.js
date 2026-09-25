@@ -108,8 +108,10 @@ async function setup(t, options = {}) {
 
 test('extension registers commands, hover, multiline draft filesystem and preview provider', async t => {
   await setup(t);
-  assert.equal(commands.size, 13);
-  assert.ok(commands.has('lineComments.compact'));
+  assert.equal(commands.size, 12);
+  assert.equal(commands.has('lineComments.compact'), false);
+  const manifest = require('../package.json').contributes.commands.map(item => item.command).sort();
+  assert.deepEqual([...commands.keys()].sort(), manifest);
   assert.ok(hoverProviders.length > 0);
   assert.ok(fileProviders.has('line-comment-draft'));
   assert.ok(contentProviders.has('line-comments-preview'));
@@ -353,24 +355,27 @@ test('deleting the target removes its highlight instead of highlighting its repl
   await api.refresh(document.uri);
   assert.ok(highlightSets(editor).every(([, ranges]) => ranges.length === 0));
 });
-test('conversion command requires confirmation and writes only the sidecar', async t => {
-  const { root, document, api } = await setup(t);
-  const { createNote, serialize } = require('../src/core/format');
-  const raw = serialize('app.ts', [createNote(document.text, 2, 'Old-format comment.')], { version: 1 });
-  await fs.writeFile(`${document.uri.fsPath}.comment`, raw);
-  const original = vscode.window.showWarningMessage;
-  try {
-    vscode.window.showWarningMessage = async () => undefined;
-    await commands.get('lineComments.compact')();
-    assert.equal((await service.load(root, 'app.ts')).raw, raw);
-    vscode.window.showWarningMessage = async () => 'Convert to code-free format';
-    await commands.get('lineComments.compact')();
-    const result = await service.load(root, 'app.ts');
-    assert.equal(result.formatVersion, 2);
-    assert.doesNotMatch(result.raw, /if \(!ready\)|const ready/);
-    assert.equal(await fs.readFile(document.uri.fsPath, 'utf8'), document.text);
-    assert.equal((await api.store.get(document)).results[0].note.text, 'Old-format comment.');
-  } finally { vscode.window.showWarningMessage = original; }
+test('a legacy v1 sidecar is reported, shows no stale presentation and is never rewritten by the editor', async t => {
+  const { document, editor, api } = await setup(t);
+  const legacy = '# line-comments v1\n--- app.ts\n+++ app.ts.annotated\n@@ -1,3 +1,4 @@ id=lc_old base=' + 'a'.repeat(64) + ' state=attached\n const ready = false;\n+// Old-format comment.\n if (!ready) wait();\n start();\n';
+  const sidecar = `${document.uri.fsPath}.comment`;
+  await fs.writeFile(sidecar, legacy);
+  await assert.rejects(() => api.store.get(document), /Unsupported legacy/);
+  await api.refresh(document.uri);
+  assert.ok(highlightSets(editor).every(([, ranges]) => ranges.length === 0));
+  assert.deepEqual(editor.decorations, []);
+  assert.equal(await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false }), undefined);
+  assert.ok(vscode.logs.some(line => line.includes('Unsupported legacy line-comments v1')));
+  for (const name of ['add', 'edit', 'remove', 'review', 'reanchor']) {
+    vscode.lastError = undefined;
+    await commands.get(`lineComments.${name}`)();
+    assert.match(vscode.lastError, /Unsupported legacy/);
+  }
+  document.text = '\n' + document.text; document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: 0, rangeLength: 0, text: '\n' }] });
+  await fs.writeFile(document.uri.fsPath, document.text);
+  await api.store.saved(document);
+  assert.equal(await fs.readFile(sidecar, 'utf8'), legacy);
 });
 test('an unreadable sidecar clears prior highlights instead of showing stale attachments', async t => {
   const { root, document, editor, api } = await setup(t);

@@ -1,7 +1,8 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createNote, serialize, parse } = require('../src/core/format');
+const { serialize, parse } = require('../src/core/format');
+const { createNote } = require('../src/core/note');
 const { sourceHash } = require('../src/core/text');
 const { resolveNotes, rebaseNotes } = require('../src/core/anchors');
 const { render } = require('../src/core/render');
@@ -9,7 +10,7 @@ const { trackEdits, applyChanges } = require('../src/core/edits');
 const SOURCE = ['function App() {', '  const ready = session.ready;', '  if (!ready) return null;', '  return render();', '}', ''].join('\n');
 const note = () => createNote(SOURCE, 3, 'Wait for restoration, not merely a user value.');
 
-test('round-trip preserves line, text, context, revision and ID', () => {
+test('round-trip preserves line, text, anchor, revision and ID', () => {
   const item = note();
   const raw = serialize('app.tsx', [item]);
   assert.match(raw, /\+\/\/ Wait for restoration/);
@@ -43,11 +44,12 @@ test('multiple independent notes may annotate the same source line', () => {
 test('rejects source additions and deletions', () => {
   const raw = serialize('a.ts', [note()]);
   assert.throws(() => parse(raw.replace('+// Wait', '+const Wait')), /code additions/);
-  assert.throws(() => parse(raw.replace('   if (!ready)', '-  if (!ready)')), /code additions/);
+  assert.throws(() => parse(raw.replace('+// Wait', '-  if (!ready) return null;\n+// Wait')), /code additions/);
 });
-test('rejects malformed counts, duplicate IDs and invalid metadata', () => {
+test('rejects malformed coordinates, duplicate IDs and invalid metadata', () => {
   const item = note(), raw = serialize('a.ts', [item]);
-  assert.throws(() => parse(raw.replace('@@ -1,5 +1,6 @@', '@@ -1,5 +1,9 @@')), /coordinates/);
+  assert.throws(() => parse(raw.replace('@@ 3 @@', '@@ 2 @@')), /anchor line/);
+  assert.throws(() => parse(raw.replace('after=2', 'after=3')), /fingerprint/);
   assert.throws(() => serialize('a.ts', [item, item]), /duplicate/);
   assert.throws(() => parse(raw.replace('state=attached', 'state=whatever')), /header/);
   assert.throws(() => serialize('../a\nb.ts', [item]), /filename/);

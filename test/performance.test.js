@@ -6,7 +6,8 @@ const os = require('node:os');
 const path = require('node:path');
 const { sourceHash, hash, linesOf } = require('../src/core/text');
 const { resolveNotes } = require('../src/core/anchors');
-const { createNote, serialize, parse } = require('../src/core/format');
+const { serialize, parse } = require('../src/core/format');
+const { createNote } = require('../src/core/note');
 const { clean, findGeneratedFiles } = require('../scripts/clean');
 
 test('optimized source hashing preserves normalization and validation', () => {
@@ -15,13 +16,11 @@ test('optimized source hashing preserves normalization and validation', () => {
   }
   for (const invalid of [null, undefined, 42, {}, '\0']) assert.throws(() => sourceHash(invalid), /UTF-8/);
 });
-test('same-revision fast path preserves exact positions for duplicate lines in both formats', () => {
+test('same-revision fast path preserves exact positions for duplicate lines', () => {
   const source = 'start();\nrepeat();\nend();\nstart();\nrepeat();\nend();';
-  for (const version of [1, 2]) {
-    const notes = parse(serialize('a.ts', [createNote(source, 2, 'First.'), createNote(source, 5, 'Second.')], { version })).notes;
-    assert.deepEqual(resolveNotes(source, notes).map(item => [item.line, item.status]), [[2, 'attached'], [5, 'attached']]);
-    assert.deepEqual(resolveNotes('\n' + source, notes).map(item => [item.line, item.status]), [[3, 'moved'], [6, 'moved']]);
-  }
+  const notes = parse(serialize('a.ts', [createNote(source, 2, 'First.'), createNote(source, 5, 'Second.')])).notes;
+  assert.deepEqual(resolveNotes(source, notes).map(item => [item.line, item.status]), [[2, 'attached'], [5, 'attached']]);
+  assert.deepEqual(resolveNotes('\n' + source, notes).map(item => [item.line, item.status]), [[3, 'moved'], [6, 'moved']]);
 });
 test('matching revision alone never overrides an incorrect target position', () => {
   const source = 'first();\nsecond();\nthird();\nfourth();\nfifth();';

@@ -1,4 +1,4 @@
-> Historical 0.1.3 synthetic baseline, retained in 0.1.4. No new 0.1.4 comparative speedup is claimed. Re-run the benchmark for current local measurements.
+> Historical 0.1.3 synthetic baseline. The 0.2.0 v1-removal comparison is at the end. Re-run the benchmark for current local measurements.
 
 # Line Comments 0.1.3: performance and cleanup
 
@@ -22,7 +22,7 @@ Synthetic 10,000-line source; format 2. Warm, same-process measurements: 10 warm
 
 Do not interpret the unchanged-revision speedup as the entire extension being that much faster. External relocation still needs a scan. The live-edit tracking algorithm was not rewritten; its measured result is not an improvement in this run. Sub-millisecond timings and p95 values vary with hardware, JIT warmup, allocation and host contention. No statistically controlled cross-machine study was performed.
 
-The full JSON comparison includes p95 results, both sidecar formats and both source sizes. Run:
+The full JSON comparison includes p95 results and both source sizes. Run:
 
 ```sh
 npm run benchmark
@@ -47,7 +47,7 @@ The current engine still scans full source on external changes, hashes source re
 
 ## Files and cleanup
 
-Runtime modules are in src/core, src/node and src/extension plus src/cli.js and src/mcp.js. Keep both format parsers for compatibility and keep integration instructions for agent setup.
+Runtime modules are in src/core, src/node and src/extension plus src/cli.js and src/mcp.js. Since 0.2.0 there is one format parser (v2). Keep integration instructions for agent setup.
 
 Development-only files remain available in the source distribution: test/, scripts/, examples/, TESTING.md, PERFORMANCE.md, ROADMAP.md and REFERENCES.md. They are not needed in the installed VSIX.
 
@@ -56,3 +56,20 @@ Build archives belong in dist/; measurements and logs belong in reports/. Both a
 ## Validation boundary
 
 106 automated tests pass in Linux normal and aliased-TMPDIR runs. The editor API is mocked. The local unsigned VSIX is ZIP/manifest checked; actual VS Code/Cursor/macOS rendering and large-workspace behavior are not tested in this environment.
+
+## 0.2.0: v1 removal comparison
+
+Node v22.23.1, darwin/arm64, Apple M4 Pro. Same process, same method as above, `npm run benchmark -- --baseline <unmodified 0.1.4 source>`. Both sides use the v2 format; 0.1.4 is driven through its explicit v2 serializer option.
+
+| Operation (10,000 lines, 200 notes) | 0.1.4 median | 0.2.0 median |
+|---|---:|---:|
+| Create 200 notes | 24.45 ms | 24.94 ms |
+| Parse sidecar | 0.166 ms | 0.161 ms |
+| Serialize sidecar | 0.119 ms | 0.109 ms |
+| Resolve unchanged revision | 0.323 ms | 0.327 ms |
+| Resolve external leading-line insertion | 5.55 ms | 5.51 ms |
+| Track live insertion | 1.36 ms | 1.35 ms |
+| Render 200 lines | 0.244 ms | 0.247 ms |
+| Store change handling, zero notes | 0.035 ms | 0.039 ms |
+
+All differences are within run-to-run noise; this cleanup is not a performance change. Note creation now computes fingerprints immediately instead of at serialization, so total work per write is unchanged. Creating notes still splits the whole source once per note; that pre-existing cost was left alone.

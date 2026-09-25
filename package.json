@@ -2,7 +2,7 @@
   "name": "line-comments",
   "displayName": "Line Comments",
   "description": "Per-line comments in sibling .comment patches. Hover context, line tracking, review warnings, and agent CLI/MCP access without changing source.",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "publisher": "line-comments-local",
   "license": "MIT",
   "engines": {
@@ -114,10 +114,6 @@
       {
         "command": "lineComments.copyMcp",
         "title": "Line Comments: Copy Cursor MCP Configuration"
-      },
-      {
-        "command": "lineComments.compact",
-        "title": "Line Comments: Remove Copied Code from .comment"
       }
     ],
     "menus": {

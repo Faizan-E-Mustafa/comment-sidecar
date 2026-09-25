@@ -3,20 +3,16 @@ const { hash } = require('./text');
 
 // Hash the exact lines, not normalized syntax; array encoding preserves boundaries.
 function contextHash(lines) { return hash(JSON.stringify(lines)); }
-function fingerprintOf(note) {
-  if (note.anchor) return note.anchor;
+function anchorAt(lines, line) {
+  const target = lines[line - 1];
+  const before = lines.slice(Math.max(0, line - 3), line - 1);
+  const after = lines.slice(line, line + 2);
   return {
-    target: hash(note.target),
-    context: contextHash([...note.before, note.target, ...note.after]),
-    before: note.before.length,
-    after: note.after.length,
-    strong: note.target.trim().length > 3,
+    before: before.length,
+    after: after.length,
+    strong: target.trim().length > 3,
+    target: hash(target),
+    context: contextHash([...before, target, ...after]),
   };
 }
-function compactNote(note) {
-  return {
-    id: note.id, base: note.base, state: note.state, line: note.line,
-    anchor: { ...fingerprintOf(note) }, text: note.text,
-  };
-}
-module.exports = { contextHash, fingerprintOf, compactNote };
+module.exports = { contextHash, anchorAt };

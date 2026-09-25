@@ -14,6 +14,12 @@ function measure(fn, iterations = 100) {
   samples.sort((a, b) => a - b);
   return { medianMs: +samples[Math.floor(samples.length * 0.5)].toFixed(5), p95Ms: +samples[Math.floor(samples.length * 0.95)].toFixed(5) };
 }
+// Releases up to 0.1.4 exported createNote from format.js and chose v2 through a serializer option.
+function loadFormat(root, load) {
+  if (fs.existsSync(path.join(root, 'src/core/note.js'))) return { ...load('src/core/note.js'), ...load('src/core/format.js') };
+  const format = load('src/core/format.js');
+  return { createNote: format.createNote, parse: format.parse, serialize: (name, notes) => format.serialize(name, notes, { version: 2 }) };
+}
 function loadImplementation(root) {
   const load = relative => require(path.join(root, relative));
   const originalLoad = Module._load;
@@ -25,7 +31,7 @@ function loadImplementation(root) {
     ({ Store } = load('src/extension/store.js'));
   } finally { Module._load = originalLoad; }
   return { root, version: load('package.json').version, Store,
-    ...load('src/core/format.js'), ...load('src/core/anchors.js'),
+    ...loadFormat(root, load), ...load('src/core/anchors.js'),
     ...load('src/core/render.js'), ...load('src/core/edits.js'), ...load('src/core/text.js') };
 }
 function noCommentEdit(implementation, tail) {
@@ -50,26 +56,24 @@ function run(implementation) {
     const base = implementation.sourceHash(source);
     const notes = Array.from({ length: noteCount }, (_, i) => implementation.createNote(source,
       4 + i * Math.floor((lineCount - 8) / noteCount), 'Preserve the initialization order before using this value.', { base, id: `lc_bench${i}` }));
-    for (const formatVersion of [1, 2]) {
-      const raw = implementation.serialize('example.ts', notes, { version: formatVersion });
-      const persisted = implementation.parse(raw).notes;
-      const results = implementation.resolveNotes(source, persisted);
-      const byLine = new Map();
-      for (const result of results) {
-        const items = byLine.get(result.line) || []; items.push(result); byLine.set(result.line, items);
-      }
-      const changed = '\n' + source;
-      const hover = implementation.version === '0.1.2'
-        ? () => results.filter(item => item.line === 4) : () => byLine.get(4);
-      reports.push({ formatVersion, lineCount, noteCount, sourceBytes: Buffer.byteLength(source), sidecarBytes: Buffer.byteLength(raw),
-        parse: measure(() => implementation.parse(raw)),
-        resolveSameRevision: measure(() => implementation.resolveNotes(source, persisted)),
-        resolveExternalEdit: measure(() => implementation.resolveNotes(changed, persisted)),
-        trackEditorInsertion: measure(() => implementation.trackEdits(source, changed, results, [{ rangeOffset: 0, rangeLength: 0, text: '\n' }])),
-        hoverLookup: measure(hover, 1000),
-        render200Lines: measure(() => implementation.render(source, results, { start: 1, end: 200 })),
-      });
+    const raw = implementation.serialize('example.ts', notes);
+    const persisted = implementation.parse(raw).notes;
+    const results = implementation.resolveNotes(source, persisted);
+    const byLine = new Map();
+    for (const result of results) {
+      const items = byLine.get(result.line) || []; items.push(result); byLine.set(result.line, items);
     }
+    const changed = '\n' + source;
+    reports.push({ lineCount, noteCount, sourceBytes: Buffer.byteLength(source), sidecarBytes: Buffer.byteLength(raw),
+      createNotes: measure(() => notes.map(note => implementation.createNote(source, note.line, note.text, { base, id: note.id })), 20),
+      serialize: measure(() => implementation.serialize('example.ts', persisted)),
+      parse: measure(() => implementation.parse(raw)),
+      resolveSameRevision: measure(() => implementation.resolveNotes(source, persisted)),
+      resolveExternalEdit: measure(() => implementation.resolveNotes(changed, persisted)),
+      trackEditorInsertion: measure(() => implementation.trackEdits(source, changed, results, [{ rangeOffset: 0, rangeLength: 0, text: '\n' }])),
+      hoverLookup: measure(() => byLine.get(4), 1000),
+      render200Lines: measure(() => implementation.render(source, results, { start: 1, end: 200 })),
+    });
     reports.push({ lineCount, noteCount: 0, sourceBytes: Buffer.byteLength(source),
       storeEditWithoutComments: measure(noCommentEdit(implementation, source)) });
   }

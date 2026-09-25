@@ -1,6 +1,6 @@
 # Security and data handling
 
-No model requests, telemetry, analytics, HTTP listener or outbound networking are implemented. All extension metadata stays in local files/memory. CLI/MCP output may be sent to an external model by the agent client that invokes it; that is outside this tool's control. Legacy v1 sidecars duplicate nearby source; v2 replaces that copied context with fingerprints. Both can contain sensitive rationale: apply the same access, Git, backup and secret-scanning controls as source.
+No model requests, telemetry, analytics, HTTP listener or outbound networking are implemented. All extension metadata stays in local files/memory. CLI/MCP output may be sent to an external model by the agent client that invokes it; that is outside this tool's control. Sidecars store target/context fingerprints instead of copied source, but can still contain sensitive rationale: apply the same access, Git, backup and secret-scanning controls as source.
 
 Hover bodies use escaped plain text in an untrusted MarkdownString with HTML disabled. No note text is evaluated or executed. Agent output quotes comment bodies and labels them as repository data. This reduces ambiguity but does not prove an external model is immune to prompt injection.
 
@@ -14,4 +14,4 @@ The source and sidecar each have a 2 MiB limit. Scans exclude common dependency/
 
 Caveats: no .gitignore-compatible scanner, no secrets classifier, no remote filesystem-provider support, no cryptographic comment author signatures, no external editor interception, no MCP auth because the server is local stdio only. The VSIX is unsigned and unpublished. Enterprise extension policies may disallow it.
 
-V2 fingerprints are not encryption or redaction. Common source strings can be guessed and hashed for comparison; filenames, line counts, comment prose and revision fingerprints remain visible. A maliciously changed sidecar can alter claimed constraints just as an inline comment can. No cryptographic authenticity or identity guarantee is claimed. Conversion removes stored source context from the current sidecar, not Git history, backups, logs, existing model conversations, or code quoted intentionally inside a comment.
+V2 fingerprints are not encryption or redaction. Common source strings can be guessed and hashed for comparison; filenames, line counts, comment prose and revision fingerprints remain visible. A maliciously changed sidecar can alter claimed constraints just as an inline comment can. No cryptographic authenticity or identity guarantee is claimed. Converting an old v1 sidecar with 0.1.4 removed copied source from that file, not from Git history, backups, logs, existing model conversations, or code quoted intentionally inside a comment.
