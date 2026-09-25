@@ -11,3 +11,9 @@ Official documentation consulted for API and integration design. Compatibility m
 - Cursor MCP configuration: https://cursor.com/docs/mcp
 - Codex AGENTS.md discovery: https://developers.openai.com/codex/guides/agents-md
 - MCP stdio transport specification: https://modelcontextprotocol.io/specification/2025-11-25/basic/transports
+
+## 0.1.2 implementation references
+
+- VS Code stable decoration and hover APIs: https://code.visualstudio.com/api/references/vscode-api#DecorationRenderOptions and https://code.visualstudio.com/api/references/vscode-api#HoverProvider
+- VS Code contributed theme colors: https://code.visualstudio.com/api/references/contribution-points#contributes.colors
+- GitLens hover settings: https://help.gitkraken.com/gitlens/gitlens-settings/

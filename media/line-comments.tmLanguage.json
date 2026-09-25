@@ -1,10 +1,29 @@
 {
   "scopeName": "source.line-comments",
   "patterns": [
-    { "match": "^#.*$", "name": "comment.line.number-sign" },
-    { "match": "^(---|\\+\\+\\+).*$", "name": "entity.name.filename" },
-    { "match": "^@@.*$", "name": "meta.diff.header" },
-    { "match": "^\\+//.*$", "name": "markup.inserted.diff" },
-    { "match": "^ .*$", "name": "source" }
+    {
+      "match": "^#.*$",
+      "name": "comment.line.number-sign"
+    },
+    {
+      "match": "^(---|\\+\\+\\+).*$",
+      "name": "entity.name.filename"
+    },
+    {
+      "match": "^@@.*$",
+      "name": "meta.diff.header"
+    },
+    {
+      "match": "^@anchor.*$",
+      "name": "comment.line.metadata.line-comments"
+    },
+    {
+      "match": "^\\+//.*$",
+      "name": "markup.inserted.diff"
+    },
+    {
+      "match": "^ .*$",
+      "name": "source"
+    }
   ]
 }

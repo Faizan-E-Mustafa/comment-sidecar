@@ -2,7 +2,7 @@
 
 ## Executed in the build environment
 
-66 automated tests pass using Node's built-in test runner on Linux, Node v22.16.0, both normally and with the temporary directory routed through a symlink. See TEST-RESULTS.txt and TEST-RESULTS-ALIASES.txt; rerun `npm test` and `npm run test:aliases`. JavaScript syntax validation uses `node --check`; the separate example check uses `tsc --noEmit -p examples`.
+95 automated tests pass using Node's built-in test runner on Linux, Node v22.16.0, both normally and with the temporary directory routed through a symlink. See TEST-RESULTS.txt and TEST-RESULTS-ALIASES.txt; rerun `npm test` and `npm run test:aliases`. JavaScript syntax validation uses `node --check`; the separate example check uses `tsc --noEmit -p examples`.
 
 Core coverage: strict independent-hunk parsing/serialization, multiline text, Unicode, CRLF, invalid source additions/deletions, malformed metadata, duplicate IDs, oversized input, empty/last lines, duplicate line ambiguity, uniquely moved windows, provisional attachments, persistent deletion, live UTF-16 edit offsets, multicursor shifts, output line numbering, comments-only mode, explicit character-budget truncation, and a 100-case deterministic insertion loop.
 
@@ -22,10 +22,12 @@ The local VSIX archive is checked for ZIP integrity, parseable manifest XML, and
 
 Real VS Code/Cursor desktop launch, macOS/Windows tests, enterprise signed-extension policy tests, live Cursor agent adoption, VS Code MCP client adoption, real model-token accounting, package publication, stress/fuzz testing, remote filesystem-provider integration and hostile-process filesystem race testing.
 
+V0.1.2 adds strict v2-format and fingerprint-anchoring coverage, legacy conversion and compatibility checks, guarded conversion in a real CLI subprocess, new-file v2 writes and source preservation, line/underline/off decoration checks, deduplication, warning colors, stale-decoration cleanup, and confirmation/cancellation of editor conversion. The earlier v1 core tests remain and all ordinary service/MCP tests now exercise new-file v2 writes.
+
 ## Desktop smoke test
 
-1. Install the local VSIX and open examples/app.tsx. Use the new examples folder with fixture.d.ts and tsconfig.json. Hover lines 4 and 5: each comment should appear once, without an attachment heading, ID, revision sentence or inline label. Verify no source characters were inserted. Enable showMarkers to check dot-only indicators. Real language errors still appear in native hovers.
-2. Add a multiline comment at a chosen line, save its side editor, and inspect the generated sibling patch. Edit/delete it through commands.
+1. Install the local VSIX and open examples/app.tsx. Use the new examples folder with fixture.d.ts and tsconfig.json. Verify lines 4 and 5 have a subtle tint/left edge, switch highlightStyle between line/underline/off, and hover them: each comment should appear once, without an attachment heading, ID, revision sentence or inline label. Verify no source characters were inserted. Enable showMarkers to check dot-only indicators. Real language errors still appear in native hovers.
+2. Add a multiline comment at a chosen line, save its side editor, and inspect the generated sibling patch. Verify a newly created patch contains `@anchor` fingerprints but no copied source context. Edit/delete it through commands. Convert a backed-up v1 fixture with Remove Copied Code from .comment, verifying cancellation first and successful conversion second. Check comments still attach.
 3. Insert lines above an annotation, save source, and verify both hover and the sidecar move. Modify the target and verify review; delete/split it and verify detachment. Reattach explicitly and mark reviewed only after checking meaning.
 4. Exercise undo/redo, save/reload and branch switches. Rename a source through Explorer and check its sibling; repeat an external rename and confirm orphan detection.
 5. Open a dirty sidecar and edit the source; verify auto-sync refuses to overwrite it and explains the problem in Output. Test concurrent CLI writes while editing a note draft.

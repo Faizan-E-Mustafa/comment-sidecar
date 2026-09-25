@@ -4,7 +4,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const service = require('./node/service');
 
-const HELP = `Line Comments 0.1.1 — line-level external comments, without modifying source.
+const HELP = `Line Comments 0.1.2 — line-level external comments, without modifying source.
 
 lc read FILE [--start N --end N] [--mode annotated|comments|code] [--comment-budget N] [--json]
 lc add FILE --line N --text TEXT --expected-text TEXT --source-hash HASH --sidecar-hash HASH
@@ -13,6 +13,7 @@ lc remove FILE --id ID --source-hash HASH --sidecar-hash HASH
 lc reanchor FILE --id ID --line N --expected-text TEXT --source-hash HASH --sidecar-hash HASH
 lc review FILE --id ID --source-hash HASH --sidecar-hash HASH
 lc sync FILE --source-hash HASH --sidecar-hash HASH
+lc compact FILE --source-hash HASH --sidecar-hash HASH
 lc check [FILE] [--json]
 lc rules
 

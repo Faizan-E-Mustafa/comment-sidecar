@@ -1,6 +1,6 @@
 'use strict';
 const path = require('node:path');
-const { parse, serialize, createNote, assertComment } = require('../core/format');
+const { parse, serialize, createNote, assertComment, sidecarVersion } = require('../core/format');
 const { sourceHash, hash, linesOf, assertLine } = require('../core/text');
 const { resolveNotes, rebaseNotes } = require('../core/anchors');
 const { render } = require('../core/render');
@@ -10,7 +10,7 @@ async function load(root, file) {
   const paths = await resolveSource(root, file);
   const [source, raw] = await Promise.all([readText(paths.sourcePath), readText(paths.sidecarPath, true)]);
   const notes = raw === null ? [] : parse(raw).notes;
-  return { ...paths, source, raw, notes, sourceHash: sourceHash(source), sidecarHash: hash(raw ?? ''), results: resolveNotes(source, notes) };
+  return { ...paths, source, raw, notes, formatVersion: sidecarVersion(raw), sourceHash: sourceHash(source), sidecarHash: hash(raw ?? ''), results: resolveNotes(source, notes) };
 }
 async function read(root, file, options = {}) {
   const snapshot = await load(root, file);
@@ -26,6 +26,7 @@ async function write(root, file, options) {
     const snapshot = await load(root, file);
     requireSnapshot(snapshot, options);
     let notes = [...snapshot.notes];
+    let version = snapshot.formatVersion;
     let id = options.id;
     const index = notes.findIndex(note => note.id === id);
     if (['update', 'remove', 'reanchor', 'review'].includes(options.operation) && index < 0) throw new Error('Unknown comment ID.');
@@ -48,18 +49,21 @@ async function write(root, file, options) {
         notes[index] = createNote(snapshot.source, resolved.line, notes[index].text, { id }); break;
       }
       case 'sync': notes = rebaseNotes(snapshot.source, snapshot.results); break;
-      default: throw new Error('Operation must be add, update, remove, reanchor, review, or sync.');
+      case 'compact':
+        if (snapshot.raw === null) throw new Error('This source has no .comment sidecar to convert.');
+        version = 2; break;
+      default: throw new Error('Operation must be add, update, remove, reanchor, review, sync, or compact.');
     }
     if (sourceHash(await readText(paths.sourcePath)) !== snapshot.sourceHash) throw new Error('Source changed while writing. Retry.');
-    const raw = serialize(path.basename(paths.sourcePath), notes);
+    const raw = serialize(path.basename(paths.sourcePath), notes, { version });
     await atomicWrite(paths.sidecarPath, raw, snapshot.sidecarHash);
-    return { file: snapshot.file, id, count: notes.length, source: snapshot.sourceHash, sidecar: hash(raw) };
+    return { file: snapshot.file, id, count: notes.length, formatVersion: version, source: snapshot.sourceHash, sidecar: hash(raw) };
   });
 }
 async function saveTracked(snapshot, source, results) {
   return withLock(snapshot.sidecarPath, async () => {
     if (sourceHash(await readText(snapshot.sourcePath)) !== sourceHash(source)) throw new Error('Source changed before tracked comments could be saved.');
-    const raw = serialize(path.basename(snapshot.sourcePath), rebaseNotes(source, results));
+    const raw = serialize(path.basename(snapshot.sourcePath), rebaseNotes(source, results), { version: snapshot.formatVersion });
     if (hash((await readText(snapshot.sidecarPath, true)) ?? '') !== snapshot.sidecarHash) throw new Error('Sidecar changed concurrently. Read again before syncing.');
     if (raw === snapshot.raw) return;
     await atomicWrite(snapshot.sidecarPath, raw, snapshot.sidecarHash);

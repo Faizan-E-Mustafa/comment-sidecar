@@ -2,7 +2,7 @@
   "name": "line-comments",
   "displayName": "Line Comments",
   "description": "Per-line comments in sibling .comment patches. Hover context, line tracking, review warnings, and agent CLI/MCP access without changing source.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "publisher": "line-comments-local",
   "license": "MIT",
   "engines": {
@@ -111,6 +111,10 @@
       {
         "command": "lineComments.copyMcp",
         "title": "Line Comments: Copy Cursor MCP Configuration"
+      },
+      {
+        "command": "lineComments.compact",
+        "title": "Line Comments: Remove Copied Code from .comment"
       }
     ],
     "menus": {
@@ -145,15 +149,72 @@
       "properties": {
         "lineComments.showMarkers": {
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Show a small dot on annotated lines. Off by default; hovering the source line still shows its comments."
         },
         "lineComments.showHoverMetadata": {
           "type": "boolean",
           "default": false,
           "description": "Include annotation IDs, attachment status and revision details in hovers. Off by default; review warnings remain visible."
+        },
+        "lineComments.highlightStyle": {
+          "type": "string",
+          "enum": [
+            "line",
+            "underline",
+            "off"
+          ],
+          "default": "line",
+          "enumDescriptions": [
+            "Subtle whole-line tint and left edge; amber when review is needed.",
+            "Underline annotated code without a line background.",
+            "Do not highlight annotated lines; hover remains available."
+          ],
+          "description": "How annotated source lines are highlighted. Does not replace syntax colors or change source text."
         }
       }
-    }
+    },
+    "colors": [
+      {
+        "id": "lineComments.highlightBackground",
+        "description": "Background for lines with external comments. Use transparency.",
+        "defaults": {
+          "dark": "#4CA6FF12",
+          "light": "#1473E60D",
+          "highContrast": "#00000000",
+          "highContrastLight": "#00000000"
+        }
+      },
+      {
+        "id": "lineComments.highlightBorder",
+        "description": "Left edge or underline for lines with external comments.",
+        "defaults": {
+          "dark": "#71B7FF88",
+          "light": "#1668BD88",
+          "highContrast": "contrastBorder",
+          "highContrastLight": "contrastBorder"
+        }
+      },
+      {
+        "id": "lineComments.reviewBackground",
+        "description": "Background for comments needing review. Use transparency.",
+        "defaults": {
+          "dark": "#E6AF2E16",
+          "light": "#BA7B1010",
+          "highContrast": "#00000000",
+          "highContrastLight": "#00000000"
+        }
+      },
+      {
+        "id": "lineComments.reviewBorder",
+        "description": "Left edge or underline for comments needing review.",
+        "defaults": {
+          "dark": "#E6AF2EA0",
+          "light": "#9C610CB0",
+          "highContrast": "editorWarning.foreground",
+          "highContrastLight": "editorWarning.foreground"
+        }
+      }
+    ]
   }
 }

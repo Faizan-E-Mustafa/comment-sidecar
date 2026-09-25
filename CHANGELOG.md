@@ -1,3 +1,10 @@
+# 0.1.2
+
+- Add theme-aware blue line highlighting with a left edge, optional underline/off modes, and amber review highlighting. Deduplicate same-line notes and clear highlights for unresolved or unreadable sidecars. No decoration hover or source mutation.
+- Add code-free v2 sidecars using target/context fingerprints; keep v1 read/write compatibility. New sidecars use v2. Explicit guarded conversion is available through the editor command and CLI `compact` operation.
+- Keep per-note fingerprints out of agent reads. MCP tool schema stays the same; fresh external CLI/MCP processes are required to read v2.
+- Add tests for v2 parsing, corruption/limits, movement/ambiguity/deletion/review, source preservation, legacy compatibility, migration guards, real CLI conversion and highlight behavior. Desktop rendering remains unverified in the build environment.
+
 # Changelog
 
 ## 0.1.1

@@ -45,7 +45,7 @@ class Store {
     const entry = this.cache.get(key);
     if (!entry || !event.contentChanges.length) return;
     const next = document.getText();
-    if (Buffer.byteLength(next) > MAX_FILE_BYTES) { this.cache.delete(key); return; }
+    if (Buffer.byteLength(next) > MAX_FILE_BYTES) { this.cache.delete(key); this.onUpdate(document.uri); return; }
     const nextHash = sourceHash(next);
     if (entry.history.has(nextHash)) entry.results = entry.history.get(nextHash);
     else {

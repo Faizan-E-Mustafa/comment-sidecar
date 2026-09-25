@@ -35,6 +35,7 @@ const vscode = {
   ThemeColor: class { constructor(id) { this.id = id; } },
   Hover: class { constructor(contents, range) { this.contents = contents; this.range = range; } },
   Diagnostic: class { constructor(range, message, severity) { Object.assign(this, { range, message, severity }); } },
+  DecorationRangeBehavior: { ClosedClosed: 1 },
   DiagnosticSeverity: { Warning: 1 }, FileType: { File: 1 }, FileChangeType: { Changed: 1 }, StatusBarAlignment: { Right: 2 }, ViewColumn: { Beside: -2 },
   FileSystemError: { FileNotFound: () => new Error('File not found'), NoPermissions: message => new Error(message || 'No permissions') },
   WorkspaceEdit: class { constructor() { this.renames = []; } renameFile(a, b, options) { this.renames.push({ a, b, options }); } },
@@ -65,7 +66,7 @@ const vscode = {
   window: {
     activeTextEditor: undefined, visibleTextEditors: [],
     createOutputChannel() { return { appendLine(value) { vscode.logs.push(value); }, show() {}, dispose() {} }; },
-    createTextEditorDecorationType() { return new Disposable(); },
+    createTextEditorDecorationType(options) { const item = new Disposable(); item.options = options; return item; },
     createStatusBarItem() { const item = { visible: false, hide() { this.visible = false; }, show() { this.visible = true; }, dispose() {} }; vscode.status = item; return item; },
     onDidChangeActiveTextEditor: event('active'), onDidChangeVisibleTextEditors: event('visible'),
     showInformationMessage: async () => {}, showErrorMessage: async message => { vscode.lastError = message; },
@@ -77,7 +78,7 @@ const vscode = {
 function makeDocument(uri, text) {
   return { uri, text, version: 1, isDirty: false, getText() { return this.text; }, get lineCount() { return this.text.split('\n').length; }, lineAt(line) { const text = this.text.split('\n')[line].replace(/\r$/, ''); return { text, range: new Range(line, 0, line, text.length) }; } };
 }
-function makeEditor(document) { return { document, decorations: [], selection: new Selection(new Position(1, 0), new Position(1, 0)), setDecorations(type, options) { this.decorations = options; }, revealRange() {} }; }
+function makeEditor(document) { return { document, decorations: [], decorationSets: new Map(), selection: new Selection(new Position(1, 0), new Position(1, 0)), setDecorations(type, options) { this.decorations = options; this.decorationSets.set(type, options); }, revealRange() {} }; }
 const originalLoad = Module._load;
 Module._load = function(request, ...args) { return request === 'vscode' ? vscode : originalLoad.call(this, request, ...args); };
 const { activate } = require('../src/extension/extension');
@@ -107,7 +108,8 @@ async function setup(t, options = {}) {
 
 test('extension registers commands, hover, multiline draft filesystem and preview provider', async t => {
   await setup(t);
-  assert.equal(commands.size, 12);
+  assert.equal(commands.size, 13);
+  assert.ok(commands.has('lineComments.compact'));
   assert.ok(hoverProviders.length > 0);
   assert.ok(fileProviders.has('line-comment-draft'));
   assert.ok(contentProviders.has('line-comments-preview'));
@@ -214,7 +216,7 @@ test('optional markers are dots with no decoration hover to duplicate provider c
   vscode.configuration.showMarkers = true;
   await api.refresh(document.uri);
   assert.equal(editor.decorations.length, 1);
-  assert.equal(editor.decorations[0].renderOptions.after.contentText, '·');
+  assert.equal(editor.decorations[0].renderOptions.after.contentText, '◌');
   assert.equal(Object.hasOwn(editor.decorations[0], 'hoverMessage'), false);
   vscode.configuration.showMarkers = false;
   await api.refresh(document.uri);
@@ -284,4 +286,98 @@ test('canonical sidecar watcher event invalidates an aliased editor cache', asyn
   await service.write(root, 'app.ts', { operation: 'add', line: 2, text: 'External writer.', expectedText: 'if (!ready) wait();', expectedSource: snapshot.sourceHash, expectedSidecar: snapshot.sidecarHash });
   await events.sidecarChange.fire(Uri.file(snapshot.sidecarPath));
   assert.equal((await api.store.get(document)).results[0].note.text, 'External writer.');
+});
+
+function highlightSets(editor) {
+  return [...editor.decorationSets].filter(([type]) => type.options?.borderColor?.id?.startsWith('lineComments.'));
+}
+test('annotated lines receive one subtle theme-based highlight by default without another hover', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root);
+  await api.refresh(document.uri);
+  const active = highlightSets(editor).filter(([, ranges]) => ranges.length);
+  assert.equal(active.length, 1);
+  const [type, ranges] = active[0];
+  assert.equal(type.options.isWholeLine, true);
+  assert.equal(type.options.backgroundColor.id, 'lineComments.highlightBackground');
+  assert.equal(type.options.borderColor.id, 'lineComments.highlightBorder');
+  assert.equal(type.options.borderWidth, '0 0 0 2px');
+  assert.equal(type.options.rangeBehavior, vscode.DecorationRangeBehavior.ClosedClosed);
+  assert.equal(type.options.color, undefined);
+  assert.equal(type.options.after, undefined);
+  assert.equal(ranges.length, 1);
+  assert.equal(ranges[0].start.line, 1);
+  assert.equal(ranges[0].hoverMessage, undefined);
+});
+test('highlight styles change to underline and off without leaving old decorations', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root);
+  await api.refresh(document.uri);
+  vscode.configuration.highlightStyle = 'underline';
+  await api.refresh(document.uri);
+  const active = highlightSets(editor).filter(([, ranges]) => ranges.length);
+  assert.equal(active.length, 1);
+  assert.equal(active[0][0].options.isWholeLine, false);
+  assert.equal(active[0][0].options.borderWidth, '0 0 1px 0');
+  assert.equal(active[0][0].options.backgroundColor, undefined);
+  vscode.configuration.highlightStyle = 'off';
+  await api.refresh(document.uri);
+  assert.ok(highlightSets(editor).every(([, ranges]) => ranges.length === 0));
+  const hover = await hoverProviders.at(-1).provideHover(document, new Position(1, 0), { isCancellationRequested: false });
+  assert.equal(hoverText(hover), 'Wait for initialization.');
+});
+test('same-line notes share one highlight and review state uses a different theme color', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root, 'First explanation.');
+  await addDraft(api, root, 'Second explanation.');
+  await api.refresh(document.uri);
+  assert.equal(highlightSets(editor).reduce((sum, [, ranges]) => sum + ranges.length, 0), 1);
+  const offset = document.text.indexOf('wait()');
+  document.text = document.text.replace('wait()', 'awaitReady()'); document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: offset, rangeLength: 6, text: 'awaitReady()' }] });
+  await api.refresh(document.uri);
+  const active = highlightSets(editor).filter(([, ranges]) => ranges.length);
+  assert.equal(active.length, 1);
+  assert.equal(active[0][0].options.backgroundColor.id, 'lineComments.reviewBackground');
+});
+test('deleting the target removes its highlight instead of highlighting its replacement line', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root);
+  await api.refresh(document.uri);
+  const start = document.text.indexOf('if (!ready)');
+  const length = document.text.indexOf('\n', start) - start + 1;
+  document.text = document.text.slice(0, start) + document.text.slice(start + length); document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: start, rangeLength: length, text: '' }] });
+  await api.refresh(document.uri);
+  assert.ok(highlightSets(editor).every(([, ranges]) => ranges.length === 0));
+});
+test('conversion command requires confirmation and writes only the sidecar', async t => {
+  const { root, document, api } = await setup(t);
+  const { createNote, serialize } = require('../src/core/format');
+  const raw = serialize('app.ts', [createNote(document.text, 2, 'Old-format comment.')], { version: 1 });
+  await fs.writeFile(`${document.uri.fsPath}.comment`, raw);
+  const original = vscode.window.showWarningMessage;
+  try {
+    vscode.window.showWarningMessage = async () => undefined;
+    await commands.get('lineComments.compact')();
+    assert.equal((await service.load(root, 'app.ts')).raw, raw);
+    vscode.window.showWarningMessage = async () => 'Convert to code-free format';
+    await commands.get('lineComments.compact')();
+    const result = await service.load(root, 'app.ts');
+    assert.equal(result.formatVersion, 2);
+    assert.doesNotMatch(result.raw, /if \(!ready\)|const ready/);
+    assert.equal(await fs.readFile(document.uri.fsPath, 'utf8'), document.text);
+    assert.equal((await api.store.get(document)).results[0].note.text, 'Old-format comment.');
+  } finally { vscode.window.showWarningMessage = original; }
+});
+test('an unreadable sidecar clears prior highlights instead of showing stale attachments', async t => {
+  const { root, document, editor, api } = await setup(t);
+  await addDraft(api, root);
+  await api.refresh(document.uri);
+  assert.ok(highlightSets(editor).some(([, ranges]) => ranges.length > 0));
+  await fs.writeFile(`${document.uri.fsPath}.comment`, 'broken sidecar');
+  api.store.invalidate(document.uri);
+  await api.refresh(document.uri);
+  assert.ok(highlightSets(editor).every(([, ranges]) => ranges.length === 0));
+  assert.ok(vscode.logs.some(line => line.includes('sidecar version')));
 });

@@ -1,4 +1,4 @@
-# Line Comments · 0.1.1
+# Line Comments · 0.1.2
 
 Per-line explanatory comments stored in sibling `.comment` patches, projected onto the original code in VS Code. Includes a CLI and optional local MCP server for agents.
 
@@ -13,15 +13,15 @@ No cloud service, API key, model calls, build transformation, external runtime p
 
 ## Try the extension
 
-Install the supplied `line-comments-0.1.1.vsix` through **Extensions → … → Install from VSIX**. In VS Code, the shell equivalent is:
+Install the supplied `line-comments-0.1.2.vsix` through **Extensions → … → Install from VSIX**. In VS Code, the shell equivalent is:
 
 ```sh
-code --install-extension line-comments-0.1.1.vsix
+code --install-extension line-comments-0.1.2.vsix
 ```
 
 In Cursor, use its Install from VSIX command where available. This extension uses the stable VS Code API with engine floor 1.85, but Cursor is a separate test target. Enterprise policy may prevent unsigned local VSIX installation. This is an unsigned local package; no Marketplace or Open VSX release has been published.
 
-Open the `examples` folder and `app.tsx`. Hover lines 4 and 5. The example now includes `fixture.d.ts` and a local `tsconfig.json` using JSX preserve mode. It type-checks without React dependencies; it remains an editor fixture, not an executable React application. Use the **new examples folder**, since installing a VSIX does not update a previously extracted workspace.
+Open the `examples` folder and `app.tsx`. Lines 4 and 5 have a subtle blue tint and a left-edge accent. Hover them to read the comments. The example now includes `fixture.d.ts` and a local `tsconfig.json` using JSX preserve mode. It type-checks without React dependencies; it remains an editor fixture, not an executable React application. Use the **new examples folder**, since installing a VSIX does not update a previously extracted workspace.
 
 To run from source instead of installing the package, open this repository in VS Code and use the included **Run Line Comments Extension** launch configuration (F5). No dependency installation or build step is required.
 
@@ -37,6 +37,7 @@ Healthy comments show only their text on hover, once. Inline labels and normal-s
 
 ```json
 {
+  "lineComments.highlightStyle": "line",
   "lineComments.showMarkers": false,
   "lineComments.showHoverMetadata": false
 }
@@ -44,9 +45,38 @@ Healthy comments show only their text on hover, once. Inline labels and normal-s
 
 `showMarkers: true` opts into a small dot (or `!` for review), not the old `comment` label. `showHoverMetadata: true` restores IDs, status and reasons for debugging. Do not turn off `editor.hover.enabled`: that disables comment hovers too.
 
-### Updating from 0.1.0
+`highlightStyle` is `line` (default), `underline`, or `off`. Normal syntax colors remain unchanged. Comments needing review use amber; missing or ambiguous targets are not highlighted at their old positions. Themes can override `lineComments.highlightBackground`, `lineComments.highlightBorder`, `lineComments.reviewBackground`, and `lineComments.reviewBorder` under `workbench.colorCustomizations`. All color overrides belong to the editor settings, not the sidecar.
 
-Install the new VSIX over the existing extension and run **Developer: Reload Window**. Extract the new source archive into a separate folder for tests and the updated example. No `.comment` format migration is required. The update does not overwrite comments in existing workspaces.
+Native hover content is shared with other providers. To keep GitLens commit popups on its annotations rather than the code itself, manually merge these settings (the extension never changes another extension's preferences):
+
+```json
+{
+  "gitlens.hovers.currentLine.over": "annotation",
+  "gitlens.hovers.annotations.over": "annotation"
+}
+```
+
+Keep `editor.hover.enabled` enabled. Setting `gitlens.hovers.enabled` to `false` disables all GitLens hovers instead, not ours. Real TypeScript diagnostics may still share the native hover.
+
+### Code-free sidecars
+
+New comment files use **v2**: line coordinates, comment bodies, IDs, revision guards and SHA-256 fingerprints of the target/context. They do not automatically copy target or neighboring source code. This remains a per-line diff-like format, not Markdown or symbol-level documentation.
+
+V1 copied up to five source lines as an attachment anchor. V2 compares their fingerprints instead. Existing v1 files remain readable and keep their version on ordinary edits/saves. To convert one deliberately, open its source file, save source and sidecar, then run **Line Comments: Remove Copied Code from .comment**. The command asks for confirmation; commit or back up the sidecar first because v0.1.0/v0.1.1 cannot read v2. Only the sidecar is changed. IDs, text and review/detachment semantics are preserved; conversion does not guess a new target or mark stale comments reviewed.
+
+Terminal equivalent after a fresh `read`:
+
+```sh
+node src/cli.js compact src/app.tsx \
+  --source-hash SOURCE_HASH_FROM_READ \
+  --sidecar-hash SIDECAR_HASH_FROM_READ
+```
+
+Fingerprints are matching metadata, not encryption or proof of semantic identity. Exact-context moves can be located; arbitrary rewrites and cross-file moves still need review/reattachment. V2 may be larger in bytes than short v1 code snippets; it removes duplicated code, not necessarily metadata size. Agents should continue using the combined reader, which omits per-note fingerprints, rather than reading the raw sidecar.
+
+### Updating from 0.1.0 or 0.1.1
+
+Install the new VSIX over the existing extension and run **Developer: Reload Window**. Extract the new source archive into a separate folder for tests and the updated example. Legacy `.comment` files do not require migration; the code-free conversion is opt-in. The update does not overwrite comments in existing workspaces.
 
 The CLI/MCP still return revision guards for safe writes. Editor-only display settings do not alter the agent protocol or strip those guards.
 
@@ -149,6 +179,6 @@ npm run package
 
 `npm run check` checks JavaScript syntax, not TypeScript types. This prototype is plain CommonJS JavaScript and has no transpilation step. Packaging uses the included Python 3 script and ZIP/XML standard libraries. The produced VSIX is a local unsigned archive. A publisher can instead use `vsce package` and publish under a registered publisher after desktop testing; the placeholder `line-comments-local` is not a claimed public publisher.
 
-See FORMAT.md, SECURITY.md, TESTING.md, BENCHMARK.json and ROADMAP.md for exact scope and limitations. Keep `.comment` files in version control with source. Never run `git apply` on them: the v1 format uses independent extended diff-style hunks, not a general-purpose cumulative patch.
+See FORMAT.md, SECURITY.md, TESTING.md, BENCHMARK.json and ROADMAP.md for exact scope and limitations. Keep `.comment` files in version control with source. Never run `git apply` on them: both formats are independent annotation records, not general-purpose cumulative patches.
 
 Exclude `.comment` files from public assets, broad copy/deployment rules and class-name scanning as needed. Keep compiler directives, linter controls, license headers and tool-significant documentation comments in source. No compiler or bundler is patched by this extension.

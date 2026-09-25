@@ -5,6 +5,7 @@ const path = require('node:path');
 const { Store } = require('./store');
 const { DraftProvider } = require('./drafts');
 const { commentMarkdown, diagnosticsFor } = require('./presentation');
+const { createHighlights } = require('./highlights');
 const { render } = require('../core/render');
 const service = require('../node/service');
 const { matchingDocuments, hasDirtyDocument } = require('./documents');
@@ -17,6 +18,7 @@ function activate(context) {
     isWholeLine: true,
     after: { margin: '0 0 0 1em', color: new vscode.ThemeColor('editorCodeLens.foreground') },
   });
+  const highlights = createHighlights();
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 30);
   status.command = 'lineComments.list';
   const timers = new Map();
@@ -38,15 +40,26 @@ function activate(context) {
   }
   const drafts = new DraftProvider(invalidateSource);
   const previewUri = uri => vscode.Uri.from({ scheme: 'line-comments-preview', path: `/${path.basename(uri.fsPath)}.txt`, query: encodeURIComponent(uri.toString()) });
+  function clearPresentation(uri) {
+    diagnostics.delete(uri);
+    for (const editor of vscode.window.visibleTextEditors) {
+      if (editor.document.uri.toString() !== uri.toString()) continue;
+      highlights.apply(editor, [], 'off');
+      editor.setDecorations(decoration, []);
+    }
+    if (vscode.window.activeTextEditor?.document.uri.toString() === uri.toString()) status.hide();
+  }
   async function refresh(uri) {
     const document = vscode.workspace.textDocuments.find(doc => doc.uri.toString() === uri.toString());
     if (!document || !store.supports(document)) return;
     try {
       const entry = await store.get(document);
-      if (!entry) return;
+      if (!entry) { clearPresentation(uri); return; }
       diagnostics.set(uri, diagnosticsFor(document, entry.results));
       const options = [];
-      const show = vscode.workspace.getConfiguration('lineComments', uri).get('showMarkers', false);
+      const config = vscode.workspace.getConfiguration('lineComments', uri);
+      const show = config.get('showMarkers', false);
+      const highlightStyle = config.get('highlightStyle', 'line');
       const groups = new Map();
       if (show) for (const item of entry.results) {
         if (item.line === null || item.line > document.lineCount) continue;
@@ -55,16 +68,20 @@ function activate(context) {
       }
       for (const [line, notes] of groups) {
         const needsReview = notes.some(item => item.status === 'review');
-        options.push({ range: document.lineAt(line - 1).range, renderOptions: { after: { contentText: needsReview ? '!' : '·' } } });
+        options.push({ range: document.lineAt(line - 1).range, renderOptions: { after: { contentText: needsReview ? '!' : '◌' } } });
       }
-      for (const editor of vscode.window.visibleTextEditors) if (editor.document.uri.toString() === uri.toString()) editor.setDecorations(decoration, options);
+      for (const editor of vscode.window.visibleTextEditors) {
+        if (editor.document.uri.toString() !== uri.toString()) continue;
+        highlights.apply(editor, entry.results, highlightStyle);
+        editor.setDecorations(decoration, options);
+      }
       if (vscode.window.activeTextEditor?.document.uri.toString() !== uri.toString()) return;
       if (!entry.results.length) { status.hide(); return; }
       const pending = entry.results.filter(item => ['review', 'ambiguous', 'detached'].includes(item.status)).length;
       if (!pending) { status.hide(); return; }
       status.text = `$(comment) ${pending} to review`;
       status.tooltip = 'Line Comments: inspect external comments'; status.show();
-    } catch (error) { log(error); }
+    } catch (error) { clearPresentation(uri); log(error); }
   }
   async function current(requireClean = false) {
     const editor = vscode.window.activeTextEditor;
@@ -123,6 +140,25 @@ function activate(context) {
   command('remove', () => mutate('remove'));
   command('review', () => mutate('review'));
   command('reanchor', () => mutate('reanchor', true));
+  command('compact', async () => {
+    const { editor, root } = await current(true);
+    const snapshot = await service.load(root, editor.document.uri.fsPath);
+    if (snapshot.raw === null) throw new Error('This source has no .comment sidecar to convert.');
+    if (snapshot.formatVersion === 2) {
+      void vscode.window.showInformationMessage('This .comment file already uses code-free fingerprints.'); return;
+    }
+    const choice = await vscode.window.showWarningMessage(
+      'Replace copied source context with fingerprints in this .comment file? Comments and attachment states are preserved. Older extension versions cannot read v2. Commit or back up the sidecar first.',
+      { modal: true }, 'Convert to code-free format');
+    if (choice !== 'Convert to code-free format') return;
+    if (!vscode.workspace.isTrusted) throw new Error('Trust this workspace before changing comments.');
+    if (await hasDirtyDocument([snapshot.sourcePath, snapshot.sidecarPath])) throw new Error('Save the source and sidecar before converting.');
+    await service.write(root, snapshot.sourcePath, {
+      operation: 'compact', expectedSource: snapshot.sourceHash, expectedSidecar: snapshot.sidecarHash,
+    });
+    store.invalidate(editor.document.uri); updated(editor.document.uri);
+    void vscode.window.showInformationMessage('Converted .comment to v2. Source code was not changed.');
+  });
   command('openSidecar', async () => {
     const { editor } = await current();
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(vscode.Uri.file(`${editor.document.uri.fsPath}.comment`)), { viewColumn: vscode.ViewColumn.Beside });
@@ -171,7 +207,7 @@ function activate(context) {
     void vscode.window.showInformationMessage('Copied Cursor MCP configuration. Merge its server entry into .cursor/mcp.json.');
   });
   context.subscriptions.push(
-    output, diagnostics, previewEvents, decoration, status, drafts,
+    output, diagnostics, previewEvents, decoration, highlights, status, drafts,
     new vscode.Disposable(() => { for (const timer of timers.values()) clearTimeout(timer); }),
     vscode.workspace.registerFileSystemProvider('line-comment-draft', drafts, { isCaseSensitive: true }),
     vscode.workspace.registerTextDocumentContentProvider('line-comments-preview', {
