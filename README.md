@@ -240,7 +240,6 @@ No. There is no network access, telemetry or model call, and hovers are computed
 - [FORMAT.md](FORMAT.md): the `.comment` file format.
 - [SECURITY.md](SECURITY.md): trust boundaries and what is not protected.
 - [DEVELOPMENT.md](DEVELOPMENT.md): building, testing, releasing and the code layout.
-- [ROADMAP.md](ROADMAP.md): what's still missing before 1.0.
 
 <br>
 

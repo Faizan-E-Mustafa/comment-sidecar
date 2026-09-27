@@ -9,7 +9,5 @@ dist/**
 reports/**
 examples/**
 DEVELOPMENT.md
-ROADMAP.md
 AGENTS.md
 .gitignore
-pnpm-lock.yaml
