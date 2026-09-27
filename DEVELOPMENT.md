@@ -53,7 +53,7 @@ src/extension/   VS Code integration.
 src/cli.js       The `lc` command.
 src/mcp.js       The optional MCP server (stdio).
 integration/     Agent instructions and MCP config examples.
-media/           Syntax highlighting for .comment files.
+media/           Syntax highlighting for .comment files; the extension icon and README images.
 examples/        A small annotated file to try the extension on.
 test/            Tests; test/fixtures holds a golden .comment file.
 scripts/         Test runners, packaging, benchmark, cleanup.
@@ -113,7 +113,7 @@ What the tests do **not** prove: real VS Code or Cursor rendering, Windows or ma
 
 ## Release
 
-`npm run release` builds `dist/line-comments-<version>.vsix`, `dist/line-comments-<version>-source.zip` and `dist/SHA256SUMS`, then checks:
+`npm run release` builds `dist/comment-sidecar-<version>.vsix`, `dist/comment-sidecar-<version>-source.zip` and `dist/SHA256SUMS`, then checks:
 
 - both archives pass ZIP integrity checks;
 - the source ZIP matches the working tree byte for byte;

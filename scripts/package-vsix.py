@@ -10,6 +10,11 @@ root = Path(__file__).resolve().parents[1]
 pkg = json.loads((root / 'package.json').read_text(encoding='utf-8'))
 (root / 'dist').mkdir(exist_ok=True)
 output = root / 'dist' / f"{pkg['name']}-{pkg['version']}.vsix"
+icon = pkg.get('icon')
+if icon and not (root / icon).is_file():
+    raise RuntimeError(f'package.json icon does not exist: {icon}')
+icon_metadata = f"\n    <Icon>extension/{escape(icon)}</Icon>" if icon else ''
+icon_asset = f'\n    <Asset Type="Microsoft.VisualStudio.Services.Icons.Default" Path="extension/{escape(icon)}" Addressable="true" />' if icon else ''
 manifest = f'''<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011">
   <Metadata>
@@ -24,14 +29,14 @@ manifest = f'''<?xml version="1.0" encoding="utf-8"?>
       <Property Id="Microsoft.VisualStudio.Code.ExtensionDependencies" Value="" />
       <Property Id="Microsoft.VisualStudio.Code.ExtensionPack" Value="" />
     </Properties>
-    <License>extension/LICENSE</License>
+    <License>extension/LICENSE</License>{icon_metadata}
   </Metadata>
   <Installation><InstallationTarget Id="Microsoft.VisualStudio.Code" /></Installation>
   <Dependencies />
   <Assets>
     <Asset Type="Microsoft.VisualStudio.Code.Manifest" Path="extension/package.json" Addressable="true" />
     <Asset Type="Microsoft.VisualStudio.Services.Content.Details" Path="extension/README.md" Addressable="true" />
-    <Asset Type="Microsoft.VisualStudio.Services.Content.License" Path="extension/LICENSE" Addressable="true" />
+    <Asset Type="Microsoft.VisualStudio.Services.Content.License" Path="extension/LICENSE" Addressable="true" />{icon_asset}
   </Assets>
 </PackageManifest>
 '''
@@ -45,6 +50,8 @@ content_types = '''<?xml version="1.0" encoding="utf-8"?>
   <Default Extension="comment" ContentType="text/plain" />
   <Default Extension="ts" ContentType="text/plain" />
   <Default Extension="tsx" ContentType="text/plain" />
+  <Default Extension="png" ContentType="image/png" />
+  <Default Extension="svg" ContentType="image/svg+xml" />
   <Default Extension="vsixmanifest" ContentType="text/xml" />
   <Override PartName="/extension/LICENSE" ContentType="text/plain" />
 </Types>

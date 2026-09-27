@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const reports = new Set(['BENCHMARK.json', 'PERFORMANCE-COMPARISON.json']);
-const buildName = /^line-comments-\d+\.\d+\.\d+(?:-[\w.-]+)?(?:\.vsix|-source\.zip)$/;
+const buildName = /^(?:comment-sidecar|line-comments)-\d+\.\d+\.\d+(?:-[\w.-]+)?(?:\.vsix|-source\.zip)$/;
 
 function findGeneratedFiles(root) {
   const candidates = [];
