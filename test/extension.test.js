@@ -345,7 +345,7 @@ const { activate } = require('../src/extension/extension');
 Module._load = originalLoad;
 
 async function setup(t, options = {}) {
-  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'line-comments-editor-'));
+  const temporary = await fs.mkdtemp(path.join(os.tmpdir(), 'comment-sidecar-editor-'));
   let root = temporary;
 
   if (options.alias) {
@@ -387,8 +387,8 @@ test('extension registers commands, hover, multiline draft filesystem and previe
   const manifest = require('../package.json').contributes.commands.map(item => item.command).sort();
   assert.deepEqual([...commands.keys()].sort(), manifest);
   assert.ok(hoverProviders.length > 0);
-  assert.ok(fileProviders.has('line-comment-draft'));
-  assert.ok(contentProviders.has('line-comments-preview'));
+  assert.ok(fileProviders.has('comment-sidecar-draft'));
+  assert.ok(contentProviders.has('comment-sidecar-preview'));
 });
 
 test('multiline draft saves real sidecar, without changing the source', async t => {
@@ -669,7 +669,7 @@ test('canonical sidecar watcher event invalidates an aliased editor cache', asyn
 
 function highlightSets(editor) {
   return [...editor.decorationSets].filter(
-    ([type]) => type.options?.borderColor?.id?.startsWith('lineComments.'),
+    ([type]) => type.options?.borderColor?.id?.startsWith('commentSidecar.'),
   );
 }
 
@@ -683,8 +683,8 @@ test('annotated lines receive one subtle theme-based highlight by default withou
 
   const [type, ranges] = active[0];
   assert.equal(type.options.isWholeLine, true);
-  assert.equal(type.options.backgroundColor.id, 'lineComments.highlightBackground');
-  assert.equal(type.options.borderColor.id, 'lineComments.highlightBorder');
+  assert.equal(type.options.backgroundColor.id, 'commentSidecar.highlightBackground');
+  assert.equal(type.options.borderColor.id, 'commentSidecar.highlightBorder');
   assert.equal(type.options.borderWidth, '0 0 0 2px');
   assert.equal(type.options.rangeBehavior, vscode.DecorationRangeBehavior.ClosedClosed);
   assert.equal(type.options.color, undefined);
@@ -733,7 +733,7 @@ test('same-line notes share one highlight and review state uses a different them
 
   const active = highlightSets(editor).filter(([, ranges]) => ranges.length);
   assert.equal(active.length, 1);
-  assert.equal(active[0][0].options.backgroundColor.id, 'lineComments.reviewBackground');
+  assert.equal(active[0][0].options.backgroundColor.id, 'commentSidecar.reviewBackground');
 });
 
 test('deleting the target removes its highlight instead of highlighting its replacement line', async t => {
@@ -757,13 +757,13 @@ test('deleting the target removes its highlight instead of highlighting its repl
 test('an unsupported sidecar is reported, shows no stale presentation and is never rewritten by the editor', async t => {
   const { document, editor, api } = await setup(t);
   const unsupported =
-    '# line-comments v1\n--- app.ts\n+++ app.ts.annotated\n@@ -1,3 +1,4 @@ id=lc_old base=' +
+    '# comment-sidecar v1\n--- app.ts\n+++ app.ts.annotated\n@@ -1,3 +1,4 @@ id=lc_old base=' +
     'a'.repeat(64) +
     ' state=attached\n const ready = false;\n+// Old-format comment.\n if (!ready) wait();\n start();\n';
   const sidecar = `${document.uri.fsPath}.comment`;
   await fs.writeFile(sidecar, unsupported);
 
-  await assert.rejects(() => api.store.get(document), /Unsupported line-comments sidecar version/);
+  await assert.rejects(() => api.store.get(document), /Unsupported .comment file version/);
 
   await api.refresh(document.uri);
   assert.ok(highlightSets(editor).every(([, ranges]) => ranges.length === 0));
@@ -771,12 +771,12 @@ test('an unsupported sidecar is reported, shows no stale presentation and is nev
 
   const hover = await hoverAt(document, 1);
   assert.equal(hover, undefined);
-  assert.ok(vscode.logs.some(line => line.includes('Unsupported line-comments sidecar version')));
+  assert.ok(vscode.logs.some(line => line.includes('Unsupported .comment file version')));
 
   for (const name of ['add', 'edit', 'remove', 'review', 'reanchor']) {
     vscode.lastError = undefined;
-    await commands.get(`lineComments.${name}`)();
-    assert.match(vscode.lastError, /Unsupported line-comments sidecar version/);
+    await commands.get(`commentSidecar.${name}`)();
+    assert.match(vscode.lastError, /Unsupported .comment file version/);
   }
 
   document.text = '\n' + document.text;
@@ -799,7 +799,7 @@ test('an unreadable sidecar clears prior highlights instead of showing stale att
   await api.refresh(document.uri);
 
   assert.ok(highlightSets(editor).every(([, ranges]) => ranges.length === 0));
-  assert.ok(vscode.logs.some(line => line.includes('sidecar version')));
+  assert.ok(vscode.logs.some(line => line.includes('.comment file version')));
 });
 
 test('marker style can hide labels without disabling highlights or hover', async t => {
@@ -971,7 +971,7 @@ test('sidecar files are dimmed in the explorer without affecting sources or fold
 
   const provider = fileDecorationProviders[0];
   const decoration = provider.provideFileDecoration(Uri.file(path.join(root, 'app.ts.comment')));
-  assert.equal(decoration.color.id, 'lineComments.sidecarForeground');
+  assert.equal(decoration.color.id, 'commentSidecar.sidecarForeground');
   assert.equal(decoration.propagate, false);
   assert.equal(provider.provideFileDecoration(Uri.file(path.join(root, 'app.ts'))), undefined);
   assert.equal(provider.provideFileDecoration(Uri.parse('untitled:notes.comment')), undefined);
@@ -979,7 +979,7 @@ test('sidecar files are dimmed in the explorer without affecting sources or fold
 
 test('manifest contributes the sidecar color with a theme-aware default', () => {
   const color = require('../package.json').contributes.colors.find(
-    item => item.id === 'lineComments.sidecarForeground',
+    item => item.id === 'commentSidecar.sidecarForeground',
   );
   assert.deepEqual(color.defaults, {
     dark: 'disabledForeground',

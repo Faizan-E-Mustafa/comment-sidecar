@@ -6,7 +6,7 @@ It holds comments attached to single lines of the source. Tools write these file
 ## Example
 
 ```diff
-# line-comments v2
+# comment-sidecar v2
 --- app.tsx
 +++ app.tsx.annotated
 @@ 4 @@ id=lc_loading base=<sha256> state=attached
@@ -26,7 +26,7 @@ Each `<sha256>` is a full 64-character lowercase hex SHA-256 digest.
 
 | Line | Content |
 | --- | --- |
-| 1 | Exactly `# line-comments v2`. |
+| 1 | Exactly `# comment-sidecar v2`. |
 | 2 | `--- <source file name>` |
 | 3 | `+++ <source file name>.annotated` (a label only; no such file exists). |
 

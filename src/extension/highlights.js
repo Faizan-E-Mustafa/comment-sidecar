@@ -9,11 +9,11 @@ function createHighlights() {
         isWholeLine: style === 'line',
         borderStyle: 'solid',
         borderWidth: style === 'line' ? '0 0 0 2px' : '0 0 1px 0',
-        borderColor: new vscode.ThemeColor(`lineComments.${state}Border`),
+        borderColor: new vscode.ThemeColor(`commentSidecar.${state}Border`),
         rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
       };
       if (style === 'line') {
-        options.backgroundColor = new vscode.ThemeColor(`lineComments.${state}Background`);
+        options.backgroundColor = new vscode.ThemeColor(`commentSidecar.${state}Background`);
       }
       types.set(`${style}:${state}`, vscode.window.createTextEditorDecorationType(options));
     }

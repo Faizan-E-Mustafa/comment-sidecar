@@ -15,7 +15,7 @@ class DraftProvider {
   }
   create(snapshot, line, note) {
     const name = `${path.basename(snapshot.sourcePath)}-line-${line || note.line}.txt`;
-    const uri = vscode.Uri.from({ scheme: 'line-comment-draft', path: `/${randomUUID()}/${name}` });
+    const uri = vscode.Uri.from({ scheme: 'comment-sidecar-draft', path: `/${randomUUID()}/${name}` });
     this.entries.set(uri.toString(), {
       snapshot, line, id: note?.id, text: note?.text || '', time: Date.now(),
     });

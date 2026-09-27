@@ -34,8 +34,8 @@ function sidecarDecoration(uri) {
 
   const decoration = new vscode.FileDecoration(
     undefined,
-    'Line Comments sidecar',
-    new vscode.ThemeColor('lineComments.sidecarForeground'),
+    'Comment Sidecar file',
+    new vscode.ThemeColor('commentSidecar.sidecarForeground'),
   );
   decoration.propagate = false;
   return decoration;
@@ -75,7 +75,7 @@ function diagnosticsFor(document, results) {
       message,
       vscode.DiagnosticSeverity.Warning,
     );
-    diagnostic.source = 'Line Comments';
+    diagnostic.source = 'Comment Sidecar';
     diagnostic.code = result.note.id;
     return diagnostic;
   });

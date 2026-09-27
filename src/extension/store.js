@@ -61,7 +61,7 @@ class Store {
   async loadDocument(document) {
     const text = document.getText();
     if (Buffer.byteLength(text) > MAX_FILE_BYTES) {
-      throw new Error('Line Comments skips source files larger than 2 MiB.');
+      throw new Error('Comment Sidecar skips source files larger than 2 MiB.');
     }
 
     const root = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath;

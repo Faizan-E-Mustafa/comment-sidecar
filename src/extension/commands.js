@@ -59,12 +59,12 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
   }
 
   function command(name, action) {
-    context.subscriptions.push(vscode.commands.registerCommand(`lineComments.${name}`, async () => {
+    context.subscriptions.push(vscode.commands.registerCommand(`commentSidecar.${name}`, async () => {
       try {
         return await action();
       } catch (error) {
         log(error);
-        void vscode.window.showErrorMessage(`Line Comments: ${error.message}`);
+        void vscode.window.showErrorMessage(`Comment Sidecar: ${error.message}`);
       }
     }));
   }
@@ -205,7 +205,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
       args.push('--allow-write');
     }
 
-    const config = { mcpServers: { 'line-comments': { type: 'stdio', command: 'node', args } } };
+    const config = { mcpServers: { 'comment-sidecar': { type: 'stdio', command: 'node', args } } };
     await vscode.env.clipboard.writeText(JSON.stringify(config, null, 2));
     void vscode.window.showInformationMessage('Copied Cursor MCP configuration. Merge its server entry into .cursor/mcp.json.');
   });

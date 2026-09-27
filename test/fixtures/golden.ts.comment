@@ -1,4 +1,4 @@
-# line-comments v2
+# comment-sidecar v2
 --- golden.ts
 +++ golden.ts.annotated
 @@ 1 @@ id=lc_first base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached

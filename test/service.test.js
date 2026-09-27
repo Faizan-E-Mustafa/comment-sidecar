@@ -14,7 +14,7 @@ const { parse } = require('../src/core/format');
 const SOURCE = 'const ready = false;\nif (!ready) wait();\nstart();\n';
 
 async function fixture(t) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'line-comments-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'comment-sidecar-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.writeFile(path.join(root, 'app.ts'), SOURCE);
   return root;
@@ -211,7 +211,7 @@ test('MCP initialize, tool discovery, read and write through real service', asyn
     id: 3,
     method: 'tools/call',
     params: {
-      name: 'line_comments_write',
+      name: 'comment_sidecar_write',
       arguments: {
         file: 'app.ts',
         operation: 'add',
@@ -228,7 +228,7 @@ test('MCP initialize, tool discovery, read and write through real service', asyn
     jsonrpc: '2.0',
     id: 4,
     method: 'tools/call',
-    params: { name: 'line_comments_read', arguments: { file: 'app.ts', start: 2, end: 2 } },
+    params: { name: 'comment_sidecar_read', arguments: { file: 'app.ts', start: 2, end: 2 } },
   });
   assert.match(response.result.content[0].text, /MCP note/);
 });
@@ -243,7 +243,7 @@ test('MCP read-only mode exposes no write tool', async t => {
   assert.equal(list.result.tools.length, 2);
 
   const denied = await handler({
-    jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'line_comments_write', arguments: {} },
+    jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'comment_sidecar_write', arguments: {} },
   });
   assert.equal(denied.error.code, -32602);
 });
@@ -258,7 +258,7 @@ test('MCP validates inputs and returns file errors as tool errors', async t => {
     jsonrpc: '2.0',
     id: 1,
     method: 'tools/call',
-    params: { name: 'line_comments_read', arguments: { file: 'app.ts', start: -1 } },
+    params: { name: 'comment_sidecar_read', arguments: { file: 'app.ts', start: -1 } },
   });
   assert.equal(result.error.code, -32602);
 
@@ -266,7 +266,7 @@ test('MCP validates inputs and returns file errors as tool errors', async t => {
     jsonrpc: '2.0',
     id: 2,
     method: 'tools/call',
-    params: { name: 'line_comments_read', arguments: { file: '../escape' } },
+    params: { name: 'comment_sidecar_read', arguments: { file: '../escape' } },
   });
   assert.equal(result.result.isError, true);
 });
@@ -308,7 +308,7 @@ test('MCP stdio subprocess accepts newline-delimited JSON and returns no stdout 
     },
     { jsonrpc: '2.0', method: 'notifications/initialized' },
     { jsonrpc: '2.0', id: 2, method: 'tools/list' },
-    { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'line_comments_read', arguments: { file: 'app.ts' } } },
+    { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'comment_sidecar_read', arguments: { file: 'app.ts' } } },
   ];
   child.stdin.end(requests.map(value => JSON.stringify(value)).join('\n') + '\n');
 

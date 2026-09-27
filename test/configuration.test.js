@@ -16,7 +16,7 @@ function config(values = {}) {
 test('editor defaults come directly from the extension manifest', () => {
   const expected = Object.fromEntries(
     Object.entries(manifest.contributes.configuration.properties)
-      .map(([key, schema]) => [key.slice('lineComments.'.length), schema.default]),
+      .map(([key, schema]) => [key.slice('commentSidecar.'.length), schema.default]),
   );
   assert.deepEqual(readSettings(config()), expected);
   assert.deepEqual(expected, {

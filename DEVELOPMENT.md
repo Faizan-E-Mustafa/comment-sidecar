@@ -106,7 +106,7 @@ What the tests do **not** prove: real VS Code or Cursor rendering, Windows or ma
 2. Try `markerStyle` `icon` / `off` / `label`, `showMarkers: false`, `highlightStyle` `underline` / `off`, and `showHoverMetadata: true`. Other hovers (TypeScript, other extensions) still appear.
 3. Add, edit and delete a multi-line comment. The source file does not change.
 4. Insert lines above a comment, edit its line, delete its line, undo, save, reopen. Expect moved, review, detached, then back.
-5. Change the first line of a `.comment` file to `# line-comments v1`. Expect an error in the **Line Comments** output, no markers, and the file unchanged after saving the source.
+5. Change the first line of a `.comment` file to `# comment-sidecar v1`. Expect an error in the **Comment Sidecar** output, no markers, and the file unchanged after saving the source.
 6. With the source or sidecar unsaved, try to save a draft. It fails without overwriting.
 7. Rename a source file in the Explorer. Its `.comment` file follows.
 8. Point an agent at the CLI or MCP server and check it reads comments with the source.

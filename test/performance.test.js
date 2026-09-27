@@ -61,8 +61,8 @@ test('cleanup previews and removes only allowlisted build artifacts and reports'
   fs.mkdirSync(path.join(root, 'reports'));
 
   const removable = [
-    'line-comments-0.1.2.vsix',
-    'dist/line-comments-0.1.3.vsix',
+    'comment-sidecar-0.1.2.vsix',
+    'dist/comment-sidecar-0.1.3.vsix',
     'reports/BENCHMARK.json',
     'PERFORMANCE-COMPARISON.json',
   ];
@@ -98,7 +98,7 @@ test('cleanup refuses to follow symlinked reports directories or build files', t
 
   const symlinkType = process.platform === 'win32' ? 'junction' : 'dir';
   fs.symlinkSync(outside, path.join(root, 'reports'), symlinkType);
-  fs.symlinkSync(path.join(outside, 'BENCHMARK.json'), path.join(root, 'line-comments-0.1.3.vsix'));
+  fs.symlinkSync(path.join(outside, 'BENCHMARK.json'), path.join(root, 'comment-sidecar-0.1.3.vsix'));
 
   assert.deepEqual(findGeneratedFiles(root), []);
 

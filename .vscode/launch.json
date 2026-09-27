@@ -1,7 +1,7 @@
 {
   "version": "0.2.0",
   "configurations": [{
-    "name": "Run Line Comments Extension",
+    "name": "Run Comment Sidecar Extension",
     "type": "extensionHost",
     "request": "launch",
     "args": ["--extensionDevelopmentPath=${workspaceFolder}", "${workspaceFolder}/examples"]

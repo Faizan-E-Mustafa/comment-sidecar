@@ -1,6 +1,6 @@
 # Agent guide for this repository
 
-Line Comments: a VS Code extension, CLI and MCP server that keep per-line comments in sibling `.comment` files.
+Comment Sidecar: a VS Code extension, CLI and MCP server that keep per-line comments in sibling `.comment` files.
 
 - Read [DEVELOPMENT.md](DEVELOPMENT.md) first: code layout, rules that must stay true, and code style.
 - The `.comment` file format is specified in [FORMAT.md](FORMAT.md).

@@ -1,5 +1,5 @@
 {
-  "scopeName": "source.line-comments",
+  "scopeName": "source.comment-sidecar",
   "patterns": [
     {
       "match": "^#.*$",
@@ -15,7 +15,7 @@
     },
     {
       "match": "^@anchor.*$",
-      "name": "comment.line.metadata.line-comments"
+      "name": "comment.line.metadata.comment-sidecar"
     },
     {
       "match": "^\\+//.*$",

@@ -18,12 +18,12 @@ const note = () => createNote(SOURCE, 3, 'Wait until restoration finishes.', { i
 const v2 = notes => parse(serialize('app.ts', notes)).notes;
 const FIXTURES = path.join(__dirname, 'fixtures');
 const guards = snapshot => ({ expectedSource: snapshot.sourceHash, expectedSidecar: snapshot.sidecarHash });
-const FOREIGN = '# line-comments v1\n--- app.ts\n+++ app.ts.annotated\n@@ -2,3 +2,4 @@ id=lc_old base=' + 'a'.repeat(64) + ' state=attached\n   const ready = session.ready;\n+// Unknown-version note.\n   if (!ready) return null;\n';
+const FOREIGN = '# comment-sidecar v1\n--- app.ts\n+++ app.ts.annotated\n@@ -2,3 +2,4 @@ id=lc_old base=' + 'a'.repeat(64) + ' state=attached\n   const ready = session.ready;\n+// Unknown-version note.\n   if (!ready) return null;\n';
 
 test('v2 stores coordinates, fingerprints and comments without copying target or neighbor code', () => {
   const raw = serialize('app.ts', [note()]);
 
-  assert.match(raw, /^# line-comments v2\n/);
+  assert.match(raw, /^# comment-sidecar v2\n/);
   assert.match(raw, /^@@ 3 @@ id=lc_wait/m);
   assert.match(raw, /^@anchor sha256 /m);
   assert.match(raw, /^\+\/\/ Wait until restoration finishes\./m);
@@ -134,7 +134,7 @@ test('v2 rejects source context, additions, deletions, incomplete bodies and mal
 });
 
 test('v2 enforces sidecar size, comment length and note count limits', () => {
-  assert.throws(() => parse('# line-comments v2\n' + 'x'.repeat(2097152)), /2 MiB/);
+  assert.throws(() => parse('# comment-sidecar v2\n' + 'x'.repeat(2097152)), /2 MiB/);
   const invalid = { ...note(), text: 'x'.repeat(16001) };
   assert.throws(() => serialize('app.ts', [invalid]), /Comment/);
   assert.throws(() => serialize('app.ts', Array(1001).fill(note())), /Too many/);
@@ -218,14 +218,14 @@ test('notes with copied source instead of an anchor are rejected', () => {
 });
 
 test('any header other than v2 is rejected as an unsupported version', () => {
-  assert.throws(() => parse(FOREIGN), /Unsupported line-comments sidecar version/);
-  assert.throws(() => parse(FOREIGN.replaceAll('\n', '\r\n')), /Unsupported line-comments sidecar version/);
-  assert.throws(() => parse('# line-comments v3\n'), /Unsupported line-comments sidecar version/);
-  assert.throws(() => parse(''), /Unsupported line-comments sidecar version/);
+  assert.throws(() => parse(FOREIGN), /Unsupported .comment file version/);
+  assert.throws(() => parse(FOREIGN.replaceAll('\n', '\r\n')), /Unsupported .comment file version/);
+  assert.throws(() => parse('# comment-sidecar v3\n'), /Unsupported .comment file version/);
+  assert.throws(() => parse(''), /Unsupported .comment file version/);
 });
 
 async function workspace(t, sidecar) {
-  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'line-comments-format-'));
+  const root = await fs.mkdtemp(path.join(os.tmpdir(), 'comment-sidecar-format-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.writeFile(path.join(root, 'app.ts'), SOURCE);
   if (sidecar !== undefined) await fs.writeFile(path.join(root, 'app.ts.comment'), sidecar);
@@ -293,7 +293,7 @@ test('reading a valid v2 sidecar never rewrites it', async t => {
 
 for (const [label, sidecar] of [
   ['unsupported-version', FOREIGN],
-  ['malformed', '# line-comments v2\n--- app.ts\n+++ app.ts.annotated\n@@ broken\n'],
+  ['malformed', '# comment-sidecar v2\n--- app.ts\n+++ app.ts.annotated\n@@ broken\n'],
 ]) {
   test(`${label} sidecars are reported and left byte-identical by every write path`, async t => {
     const root = await workspace(t, sidecar);
@@ -301,7 +301,7 @@ for (const [label, sidecar] of [
 
     await assert.rejects(
       () => service.load(root, 'app.ts'),
-      label === 'malformed' ? /hunk header/ : /Unsupported line-comments sidecar version/
+      label === 'malformed' ? /hunk header/ : /Unsupported .comment file version/
     );
     const report = await service.check(root);
     assert.equal(report.problems, 1);
@@ -322,7 +322,7 @@ for (const [label, sidecar] of [
     const cli = path.join(__dirname, '../src/cli.js');
     await assert.rejects(
       () => exec(process.execPath, [cli, 'read', 'app.ts', '--root', root]),
-      error => error.code === 2 && /Line Comments:/.test(error.stderr)
+      error => error.code === 2 && /Comment Sidecar:/.test(error.stderr)
     );
     await assert.rejects(
       () => exec(process.execPath, [

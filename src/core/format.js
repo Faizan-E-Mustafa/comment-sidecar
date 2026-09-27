@@ -2,7 +2,7 @@
 const { linesOf } = require('./text');
 const { assertNote, MAX_NOTES } = require('./note');
 const FORMAT_VERSION = 2;
-const HEADER = '# line-comments v2';
+const HEADER = '# comment-sidecar v2';
 const MAX_SIDECAR_BYTES = 2 * 1024 * 1024;
 
 function validName(name) {
@@ -44,7 +44,7 @@ function parse(raw) {
   }
   const lines = linesOf(raw);
   if (lines[0] !== HEADER) {
-    throw new Error(`Unsupported line-comments sidecar version; expected "${HEADER}".`);
+    throw new Error(`Unsupported .comment file version; expected "${HEADER}".`);
   }
   if (lines.pop() !== '') {
     throw new Error('Sidecar must end with a newline.');

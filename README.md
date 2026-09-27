@@ -85,18 +85,18 @@ Renaming a file in the editor renames its `.comment` file too. Renames made outs
 
 ## For AI agents
 
-<img src="media/readme/agents.png" alt="A terminal running “lc read app.tsx --start 4 --end 5”. The output interleaves each source line with its comment and marks comments as repository data, not instructions. Below it are three MCP tools: line_comments_read, line_comments_check, and line_comments_write, which is opt-in." width="100%">
+<img src="media/readme/agents.png" alt="A terminal running “lc read app.tsx --start 4 --end 5”. The output interleaves each source line with its comment and marks comments as repository data, not instructions. Below it are three MCP tools: comment_sidecar_read, comment_sidecar_check, and comment_sidecar_write, which is opt-in." width="100%">
 
 Agents don't see editor decorations, so give them a tool and tell them to use it.
 
-1. **Instructions.** Run **Line Comments: Copy Agent Instructions** and paste the result into your `AGENTS.md` or a Cursor rule. It explains how to read and write comments, and what a good one is: a non-obvious rule or reason, in one or two sentences, on the line that enforces it.
-2. **MCP server.** Run **Line Comments: Copy Cursor MCP Configuration**, pick read-only or read-and-write, and merge the entry into `.cursor/mcp.json`. For VS Code, start from [`integration/vscode-mcp.example.json`](integration/vscode-mcp.example.json).
+1. **Instructions.** Run **Comment Sidecar: Copy Agent Instructions** and paste the result into your `AGENTS.md` or a Cursor rule. It explains how to read and write comments, and what a good one is: a non-obvious rule or reason, in one or two sentences, on the line that enforces it.
+2. **MCP server.** Run **Comment Sidecar: Copy Cursor MCP Configuration**, pick read-only or read-and-write, and merge the entry into `.cursor/mcp.json`. For VS Code, start from [`integration/vscode-mcp.example.json`](integration/vscode-mcp.example.json).
 
 | Tool | What it does | Access |
 | --- | --- | --- |
-| `line_comments_read` | Returns source and comments together, with the original line numbers. | Read‑only |
-| `line_comments_check` | Lists comments that need review, are ambiguous, or are detached. | Read‑only |
-| `line_comments_write` | Adds, edits, reviews, reattaches or deletes comments, in `.comment` files only. Needs `--allow-write`. | Opt-in |
+| `comment_sidecar_read` | Returns source and comments together, with the original line numbers. | Read‑only |
+| `comment_sidecar_check` | Lists comments that need review, are ambiguous, or are detached. | Read‑only |
+| `comment_sidecar_write` | Adds, edits, reviews, reattaches or deletes comments, in `.comment` files only. Needs `--allow-write`. | Opt-in |
 
 Copied configurations point at the installed extension, so copy them again after an update. Comment text always reaches the agent as untrusted data, never as instructions.
 
@@ -119,7 +119,7 @@ Pass `--root /path/to/repo` to work on another repository. `read` prints the ori
 
 ## Commands
 
-Everything lives in the Command Palette under **Line Comments:**.
+Everything lives in the Command Palette under **Comment Sidecar:**.
 
 | Command | What it does |
 | --- | --- |
@@ -140,10 +140,10 @@ Everything lives in the Command Palette under **Line Comments:**.
 
 | Setting | Default | Options |
 | --- | --- | --- |
-| `lineComments.markerStyle` | `label` | `label` shows `◌ comment` · `icon` shows `◌` · `off` hides it |
-| `lineComments.showMarkers` | `true` | `false` hides markers in every style |
-| `lineComments.highlightStyle` | `line` | `line` (tint and left edge) · `underline` · `off` |
-| `lineComments.showHoverMetadata` | `false` | `true` adds the comment's ID, status and reason to the hover |
+| `commentSidecar.markerStyle` | `label` | `label` shows `◌ comment` · `icon` shows `◌` · `off` hides it |
+| `commentSidecar.showMarkers` | `true` | `false` hides markers in every style |
+| `commentSidecar.highlightStyle` | `line` | `line` (tint and left edge) · `underline` · `off` |
+| `commentSidecar.showHoverMetadata` | `false` | `true` adds the comment's ID, status and reason to the hover |
 
 <details>
 <summary><strong>Colors</strong></summary>
@@ -154,11 +154,11 @@ Every color is a theme token. Override any of them in your settings, for example
 ```json
 {
   "workbench.colorCustomizations": {
-    "lineComments.highlightBackground": "#4CA6FF12",
-    "lineComments.highlightBorder": "#71B7FF88",
-    "lineComments.reviewBackground": "#E6AF2E16",
-    "lineComments.reviewBorder": "#E6AF2EA0",
-    "lineComments.sidecarForeground": "#7F93B2"
+    "commentSidecar.highlightBackground": "#4CA6FF12",
+    "commentSidecar.highlightBorder": "#71B7FF88",
+    "commentSidecar.reviewBackground": "#E6AF2E16",
+    "commentSidecar.reviewBorder": "#E6AF2EA0",
+    "commentSidecar.sidecarForeground": "#7F93B2"
   }
 }
 ```

@@ -27,7 +27,7 @@
   "main": "./src/extension/extension.js",
   "bin": {
     "lc": "./src/cli.js",
-    "line-comments-mcp": "./src/mcp.js"
+    "comment-sidecar-mcp": "./src/mcp.js"
   },
   "activationEvents": [
     "onStartupFinished"
@@ -55,9 +55,9 @@
   "contributes": {
     "languages": [
       {
-        "id": "line-comments-patch",
+        "id": "comment-sidecar",
         "aliases": [
-          "Line Comment Patch"
+          "Comment Sidecar"
         ],
         "extensions": [
           ".comment"
@@ -66,83 +66,83 @@
     ],
     "grammars": [
       {
-        "language": "line-comments-patch",
-        "scopeName": "source.line-comments",
-        "path": "./media/line-comments.tmLanguage.json"
+        "language": "comment-sidecar",
+        "scopeName": "source.comment-sidecar",
+        "path": "./media/comment-sidecar.tmLanguage.json"
       }
     ],
     "commands": [
       {
-        "command": "lineComments.add",
-        "title": "Line Comments: Add Comment at Line"
+        "command": "commentSidecar.add",
+        "title": "Comment Sidecar: Add Comment at Line"
       },
       {
-        "command": "lineComments.edit",
-        "title": "Line Comments: Edit Comment"
+        "command": "commentSidecar.edit",
+        "title": "Comment Sidecar: Edit Comment"
       },
       {
-        "command": "lineComments.remove",
-        "title": "Line Comments: Delete Comment"
+        "command": "commentSidecar.remove",
+        "title": "Comment Sidecar: Delete Comment"
       },
       {
-        "command": "lineComments.review",
-        "title": "Line Comments: Mark Comment Reviewed"
+        "command": "commentSidecar.review",
+        "title": "Comment Sidecar: Mark Comment Reviewed"
       },
       {
-        "command": "lineComments.reanchor",
-        "title": "Line Comments: Reattach Comment to This Line"
+        "command": "commentSidecar.reanchor",
+        "title": "Comment Sidecar: Reattach Comment to This Line"
       },
       {
-        "command": "lineComments.openSidecar",
-        "title": "Line Comments: Open .comment Patch"
+        "command": "commentSidecar.openSidecar",
+        "title": "Comment Sidecar: Open .comment Patch"
       },
       {
-        "command": "lineComments.preview",
-        "title": "Line Comments: Open Annotated Preview"
+        "command": "commentSidecar.preview",
+        "title": "Comment Sidecar: Open Annotated Preview"
       },
       {
-        "command": "lineComments.copy",
-        "title": "Line Comments: Copy Annotated Selection"
+        "command": "commentSidecar.copy",
+        "title": "Comment Sidecar: Copy Annotated Selection"
       },
       {
-        "command": "lineComments.list",
-        "title": "Line Comments: List File Comments"
+        "command": "commentSidecar.list",
+        "title": "Comment Sidecar: List File Comments"
       },
       {
-        "command": "lineComments.check",
-        "title": "Line Comments: Check Workspace"
+        "command": "commentSidecar.check",
+        "title": "Comment Sidecar: Check Workspace"
       },
       {
-        "command": "lineComments.copyRules",
-        "title": "Line Comments: Copy Agent Instructions"
+        "command": "commentSidecar.copyRules",
+        "title": "Comment Sidecar: Copy Agent Instructions"
       },
       {
-        "command": "lineComments.copyMcp",
-        "title": "Line Comments: Copy Cursor MCP Configuration"
+        "command": "commentSidecar.copyMcp",
+        "title": "Comment Sidecar: Copy Cursor MCP Configuration"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "lineComments.add",
+          "command": "commentSidecar.add",
           "when": "resourceScheme == file && isWorkspaceTrusted",
-          "group": "lineComments@1"
+          "group": "commentSidecar@1"
         },
         {
-          "command": "lineComments.edit",
+          "command": "commentSidecar.edit",
           "when": "resourceScheme == file && isWorkspaceTrusted",
-          "group": "lineComments@2"
+          "group": "commentSidecar@2"
         },
         {
-          "command": "lineComments.preview",
+          "command": "commentSidecar.preview",
           "when": "resourceScheme == file",
-          "group": "lineComments@3"
+          "group": "commentSidecar@3"
         }
       ]
     },
     "keybindings": [
       {
-        "command": "lineComments.add",
+        "command": "commentSidecar.add",
         "key": "ctrl+alt+;",
         "mac": "cmd+alt+;",
         "when": "editorTextFocus && resourceScheme == file && isWorkspaceTrusted"
@@ -156,19 +156,19 @@
       }
     },
     "configuration": {
-      "title": "Line Comments",
+      "title": "Comment Sidecar",
       "properties": {
-        "lineComments.showMarkers": {
+        "commentSidecar.showMarkers": {
           "type": "boolean",
           "default": true,
           "description": "Show the external-comment marker. Enabled by default. Use markerStyle to choose the labeled ring or ring only."
         },
-        "lineComments.showHoverMetadata": {
+        "commentSidecar.showHoverMetadata": {
           "type": "boolean",
           "default": false,
           "description": "Include annotation IDs, attachment status and revision details in hovers. Off by default; review warnings remain visible."
         },
-        "lineComments.highlightStyle": {
+        "commentSidecar.highlightStyle": {
           "type": "string",
           "enum": [
             "line",
@@ -183,7 +183,7 @@
           ],
           "description": "How annotated source lines are highlighted. Does not replace syntax colors or change source text."
         },
-        "lineComments.markerStyle": {
+        "commentSidecar.markerStyle": {
           "type": "string",
           "enum": [
             "label",
@@ -202,7 +202,7 @@
     },
     "colors": [
       {
-        "id": "lineComments.sidecarForeground",
+        "id": "commentSidecar.sidecarForeground",
         "description": "Explorer and tab label color for .comment sidecar files.",
         "defaults": {
           "dark": "disabledForeground",
@@ -212,7 +212,7 @@
         }
       },
       {
-        "id": "lineComments.highlightBackground",
+        "id": "commentSidecar.highlightBackground",
         "description": "Background for lines with external comments. Use transparency.",
         "defaults": {
           "dark": "#4CA6FF12",
@@ -222,7 +222,7 @@
         }
       },
       {
-        "id": "lineComments.highlightBorder",
+        "id": "commentSidecar.highlightBorder",
         "description": "Left edge or underline for lines with external comments.",
         "defaults": {
           "dark": "#71B7FF88",
@@ -232,7 +232,7 @@
         }
       },
       {
-        "id": "lineComments.reviewBackground",
+        "id": "commentSidecar.reviewBackground",
         "description": "Background for comments needing review. Use transparency.",
         "defaults": {
           "dark": "#E6AF2E16",
@@ -242,7 +242,7 @@
         }
       },
       {
-        "id": "lineComments.reviewBorder",
+        "id": "commentSidecar.reviewBorder",
         "description": "Left edge or underline for comments needing review.",
         "defaults": {
           "dark": "#E6AF2EA0",

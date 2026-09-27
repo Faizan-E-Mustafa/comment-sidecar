@@ -13,8 +13,8 @@ const { matchingDocuments, sidecarRenameEdit } = require('./documents');
 const { registerCommands } = require('./commands');
 
 function activate(context) {
-  const output = vscode.window.createOutputChannel('Line Comments');
-  const diagnostics = vscode.languages.createDiagnosticCollection('line-comments');
+  const output = vscode.window.createOutputChannel('Comment Sidecar');
+  const diagnostics = vscode.languages.createDiagnosticCollection('comment-sidecar');
   const previewEvents = new vscode.EventEmitter();
   const decoration = vscode.window.createTextEditorDecorationType({
     isWholeLine: true,
@@ -22,7 +22,7 @@ function activate(context) {
   });
   const highlights = createHighlights();
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 30);
-  status.command = 'lineComments.list';
+  status.command = 'commentSidecar.list';
 
   const timers = new Map();
   const log = error => output.appendLine(`[${new Date().toISOString()}] ${error.message || error}`);
@@ -46,7 +46,7 @@ function activate(context) {
   }
   const drafts = new DraftProvider(invalidateSource);
   const previewUri = uri => vscode.Uri.from({
-    scheme: 'line-comments-preview',
+    scheme: 'comment-sidecar-preview',
     path: `/${path.basename(uri.fsPath)}.txt`,
     query: encodeURIComponent(uri.toString()),
   });
@@ -82,7 +82,7 @@ function activate(context) {
     }
 
     status.text = `$(comment) ${pending} to review`;
-    status.tooltip = 'Line Comments: inspect external comments';
+    status.tooltip = 'Comment Sidecar: inspect external comments';
     status.show();
   }
 
@@ -100,7 +100,7 @@ function activate(context) {
       }
 
       diagnostics.set(uri, diagnosticsFor(document, entry.results));
-      const settings = readSettings(vscode.workspace.getConfiguration('lineComments', uri));
+      const settings = readSettings(vscode.workspace.getConfiguration('commentSidecar', uri));
       const options = markerDecorations(document, entry.byLine, settings);
       for (const editor of vscode.window.visibleTextEditors) {
         if (editor.document.uri.toString() !== uri.toString()) {
@@ -126,9 +126,9 @@ function activate(context) {
         clearTimeout(timer);
       }
     }),
-    vscode.workspace.registerFileSystemProvider('line-comment-draft', drafts, { isCaseSensitive: true }),
+    vscode.workspace.registerFileSystemProvider('comment-sidecar-draft', drafts, { isCaseSensitive: true }),
     vscode.window.registerFileDecorationProvider({ provideFileDecoration: sidecarDecoration }),
-    vscode.workspace.registerTextDocumentContentProvider('line-comments-preview', {
+    vscode.workspace.registerTextDocumentContentProvider('comment-sidecar-preview', {
       onDidChange: previewEvents.event,
       async provideTextDocumentContent(uri) {
         const sourceUri = vscode.Uri.parse(decodeURIComponent(uri.query));
@@ -160,7 +160,7 @@ function activate(context) {
           }
 
           const { showHoverMetadata: showMetadata } = readSettings(
-            vscode.workspace.getConfiguration('lineComments', document.uri),
+            vscode.workspace.getConfiguration('commentSidecar', document.uri),
           );
           const line = position.line + 1;
           const contents = [
@@ -199,7 +199,7 @@ function activate(context) {
       }
     }),
     vscode.workspace.onDidChangeConfiguration(event => {
-      if (!event.affectsConfiguration('lineComments')) {
+      if (!event.affectsConfiguration('commentSidecar')) {
         return;
       }
       for (const editor of vscode.window.visibleTextEditors) {

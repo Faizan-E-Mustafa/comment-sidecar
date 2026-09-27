@@ -5,7 +5,7 @@ const os = require('node:os');
 const { spawn } = require('node:child_process');
 
 async function main() {
-  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'line-comments-alias-suite-'));
+  const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'comment-sidecar-alias-suite-'));
   try {
     const real = path.join(directory, 'real');
     const alias = path.join(directory, 'alias');

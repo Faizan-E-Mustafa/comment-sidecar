@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "line-comments": {
+    "comment-sidecar": {
       "type": "stdio",
       "command": "node",
-      "args": ["/absolute/path/to/line-comments/src/mcp.js", "--root", "${workspaceFolder}", "--allow-write"]
+      "args": ["/absolute/path/to/comment-sidecar/src/mcp.js", "--root", "${workspaceFolder}", "--allow-write"]
     }
   }
 }

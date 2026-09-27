@@ -1,4 +1,4 @@
-# line-comments v2
+# comment-sidecar v2
 --- app.tsx
 +++ app.tsx.annotated
 @@ 4 @@ id=lc_loading base=87b52c897d7e060c8922957d1e3de32c8d9a0f612f456bb210607cfb7cd46da2 state=attached

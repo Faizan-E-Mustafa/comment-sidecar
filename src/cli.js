@@ -5,7 +5,7 @@ const path = require('node:path');
 const service = require('./node/service');
 const { version } = require('../package.json');
 
-const HELP = `Line Comments ${version} — line-level external comments, without modifying source.
+const HELP = `Comment Sidecar ${version} — line-level external comments, without modifying source.
 
 lc read FILE [--start N --end N] [--mode annotated|comments|code] [--comment-budget N] [--json]
 lc add FILE --line N --text TEXT --expected-text TEXT --source-hash HASH --sidecar-hash HASH
@@ -132,7 +132,7 @@ async function main(argv = process.argv.slice(2)) {
 }
 if (require.main === module) {
   main().catch(error => {
-    process.stderr.write(`Line Comments: ${error.message}\n`);
+    process.stderr.write(`Comment Sidecar: ${error.message}\n`);
     process.exitCode = 2;
   });
 }

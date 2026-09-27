@@ -2,7 +2,7 @@
 
 const properties = require('../../package.json').contributes.configuration.properties;
 const definitions = Object.entries(properties).map(([name, schema]) => [
-  name.slice('lineComments.'.length), schema,
+  name.slice('commentSidecar.'.length), schema,
 ]);
 
 // The manifest is the single source of defaults for both the editor and tests.
