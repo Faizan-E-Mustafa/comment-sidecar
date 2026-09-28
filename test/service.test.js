@@ -6,11 +6,14 @@ const path = require('node:path');
 const os = require('node:os');
 const { promisify } = require('node:util');
 const { execFile, spawn } = require('node:child_process');
+
 const exec = promisify(execFile);
+
 const service = require('../src/node/service');
 const { resolveSource } = require('../src/node/workspace');
 const { createHandler } = require('../src/mcp');
 const { parse, serialize } = require('../src/core/format');
+
 const SOURCE = 'const ready = false;\nif (!ready) wait();\nstart();\n';
 
 async function fixture(t) {
@@ -288,6 +291,7 @@ test('MCP stdio subprocess accepts newline-delimited JSON and returns no stdout 
   child.stdout.on('data', value => {
     stdout += value;
   });
+
   child.stderr.on('data', value => {
     stderr += value;
   });
@@ -309,6 +313,7 @@ test('MCP stdio subprocess accepts newline-delimited JSON and returns no stdout 
     child.on('error', reject);
     child.on('close', resolve);
   });
+
   assert.equal(code, 0);
   assert.equal(stderr, '');
 

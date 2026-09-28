@@ -24,6 +24,7 @@ async function main() {
     await fs.rm(directory, { recursive: true, force: true });
   }
 }
+
 main().catch(error => {
   console.error(error.message);
   process.exitCode = 1;

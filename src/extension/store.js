@@ -12,6 +12,7 @@ function setResults(entry, results) {
   entry.results = results;
   entry.byLine = indexResults(results);
 }
+
 // A comment detached by a cut stays ready to follow the paste, even if the file is saved in between.
 function keepRemoved(previous, results) {
   const removed = new Map(previous.filter(result => result.removed).map(result => [result.note.id, result.removed]));
@@ -19,6 +20,7 @@ function keepRemoved(previous, results) {
     if (result.line !== null || !removed.has(result.note.id)) {
       return result;
     }
+
     return { ...result, removed: removed.get(result.note.id) };
   });
 }
@@ -31,11 +33,13 @@ class Store {
     this.onError = onError;
     this.saving = new Set();
   }
+
   supports(document) {
     return document.uri.scheme === 'file'
       && !isSidecar(document.uri.fsPath)
       && !!vscode.workspace.getWorkspaceFolder(document.uri);
   }
+
   async get(document) {
     if (!this.supports(document)) {
       return null;
@@ -53,6 +57,7 @@ class Store {
     this.pending.set(key, promise);
     return promise;
   }
+
   async loadDocument(document) {
     const text = document.getText();
     if (Buffer.byteLength(text) > MAX_FILE_BYTES) {
@@ -61,6 +66,7 @@ class Store {
 
     const root = vscode.workspace.getWorkspaceFolder(document.uri).uri.fsPath;
     const snapshot = await load(root, document.uri.fsPath);
+
     const current = document.getText();
     const entry = { snapshot, source: current, history: new Map(), version: document.version };
     const unchanged = current === snapshot.source;
@@ -73,6 +79,7 @@ class Store {
     this.onUpdate(document.uri);
     return entry;
   }
+
   changed(event) {
     const document = event.document;
     const key = document.uri.toString();
@@ -111,8 +118,10 @@ class Store {
     while (entry.history.size > 16) {
       entry.history.delete(entry.history.keys().next().value);
     }
+
     this.onUpdate(document.uri);
   }
+
   async saved(document) {
     const key = document.uri.toString();
     const entry = this.cache.get(key);
@@ -130,12 +139,14 @@ class Store {
       const version = entry.version;
       const tracked = entry.results;
       await saveTracked(entry.snapshot, source, tracked);
+
       const snapshot = await load(entry.snapshot.root, entry.snapshot.sourcePath);
       entry.snapshot = snapshot;
       if (entry.version === version) {
         const unchanged = source === snapshot.source;
         setResults(entry, keepRemoved(tracked, unchanged ? snapshot.results : resolveNotes(source, snapshot.notes)));
       }
+
       this.onUpdate(document.uri);
     } catch (error) {
       this.onError(error);
@@ -143,15 +154,19 @@ class Store {
       this.saving.delete(key);
     }
   }
+
   invalidate(uri) {
     const key = uri.toString();
     if (this.saving.has(key)) {
       return;
     }
+
     this.cache.delete(key);
   }
+
   close(document) {
     this.cache.delete(document.uri.toString());
   }
 }
+
 module.exports = { Store };

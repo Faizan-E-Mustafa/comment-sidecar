@@ -14,6 +14,7 @@ test('optimized source hashing preserves normalization and validation', () => {
   for (const text of ['', '\n', '\r\n', 'a\r\nb\r\n', 'a\rb\n', '🙂\r\n', 'x'.repeat(20000)]) {
     assert.equal(sourceHash(text), hash(linesOf(text).join('\n')));
   }
+
   for (const invalid of [null, undefined, 42, {}, '\0']) {
     assert.throws(() => sourceHash(invalid), /UTF-8/);
   }

@@ -18,15 +18,19 @@ function findGeneratedFiles(root) {
       if (error.code === 'ENOENT') {
         continue;
       }
+
       throw error;
     }
+
     if (!stat.isDirectory() || stat.isSymbolicLink()) {
       continue;
     }
+
     for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
       if (!entry.isFile() || entry.isSymbolicLink()) {
         continue;
       }
+
       const isBuild = folder !== 'reports' && (buildName.test(entry.name) || (folder === 'dist' && entry.name === 'SHA256SUMS'));
       const isReport = folder !== 'dist' && reports.has(entry.name);
       if (isBuild || isReport) {
@@ -34,6 +38,7 @@ function findGeneratedFiles(root) {
       }
     }
   }
+
   return candidates.sort();
 }
 
@@ -43,18 +48,22 @@ function clean(root, apply = false) {
   if (!apply) {
     return files;
   }
+
   for (const file of files) {
     const target = path.join(root, file);
     const parent = path.dirname(target);
     if (fs.realpathSync(parent) !== parent) {
       throw new Error(`Refusing aliased directory: ${parent}`);
     }
+
     const stat = fs.lstatSync(target);
     if (!stat.isFile() || stat.isSymbolicLink()) {
       throw new Error(`Not a regular generated file: ${file}`);
     }
+
     fs.unlinkSync(target);
   }
+
   return files;
 }
 
@@ -64,6 +73,7 @@ if (require.main === module) {
     if (args.some(arg => arg !== '--apply') || args.length > 1) {
       throw new Error('Usage: npm run clean [-- --apply]');
     }
+
     const apply = args.includes('--apply');
     const files = clean(path.resolve(__dirname, '..'), apply);
     console.log(apply ? 'Removed generated files:' : 'Preview only; no files deleted:');
@@ -76,4 +86,5 @@ if (require.main === module) {
     process.exitCode = 2;
   }
 }
+
 module.exports = { clean, findGeneratedFiles };

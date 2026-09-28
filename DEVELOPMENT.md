@@ -84,6 +84,7 @@ Each rule has tests. Keep them passing.
 ## Code style
 
 - One statement per line. Braced, multi-line `if`, loops and `try`. No nested ternaries. `npm run check` enforces these three.
+- One blank line between top-level declarations, between class methods, and between the steps of a function. Keep a value together with the checks on it, and keep a run of guard clauses together.
 - Name real decisions (`findMoves`, `isValidEdit`). Do not add wrappers just to shorten code.
 - Comments explain a non-obvious reason. Do not narrate the code.
 - No new dependencies without a strong reason.

@@ -9,12 +9,14 @@ function measure(fn, iterations = 100) {
   for (let i = 0; i < 10; i++) {
     fn();
   }
+
   const samples = [];
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
     fn();
     samples.push(performance.now() - start);
   }
+
   samples.sort((a, b) => a - b);
   return {
     medianMs: +samples[Math.floor(samples.length * 0.5)].toFixed(5),
@@ -30,10 +32,12 @@ function loadImplementation(root) {
     Module._load = function (request, ...args) {
       return request === 'vscode' ? {} : originalLoad.call(this, request, ...args);
     };
+
     ({ Store } = load('src/extension/store.js'));
   } finally {
     Module._load = originalLoad;
   }
+
   return {
     root,
     version: load('package.json').version,
@@ -110,10 +114,12 @@ function run(implementation) {
       storeEditWithoutComments: measure(noCommentEdit(implementation, source)),
     });
   }
+
   return { version: implementation.version, reports };
 }
 
 const args = process.argv.slice(2);
+
 if (args.length && (args.length !== 2 || args[0] !== '--baseline')) {
   console.error('Usage: npm run benchmark [-- --baseline /path/to/older/source]');
   process.exitCode = 2;
@@ -132,7 +138,9 @@ if (args.length && (args.length !== 2 || args[0] !== '--baseline')) {
   if (args.length) {
     result.baseline = run(loadImplementation(path.resolve(args[1])));
   }
+
   result.current = run(loadImplementation(root));
+
   const directory = path.join(root, 'reports');
   fs.mkdirSync(directory, { recursive: true });
   const output = path.join(directory, args.length ? 'PERFORMANCE-COMPARISON.json' : 'BENCHMARK.json');

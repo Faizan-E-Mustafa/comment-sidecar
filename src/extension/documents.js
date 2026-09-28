@@ -11,10 +11,12 @@ async function identity(file) {
     if (!['ENOENT', 'ENOTDIR'].includes(error.code)) {
       throw error;
     }
+
     const parent = path.dirname(file);
     if (parent === file) {
       return path.resolve(file);
     }
+
     return path.join(await identity(parent), path.basename(file));
   }
 }
@@ -30,6 +32,7 @@ async function matchingDocuments(paths, dirtyOnly = false) {
       matches.push(document);
     }
   }
+
   return matches;
 }
 
@@ -57,11 +60,13 @@ async function sidecarRenameEdit(files) {
       if (files.some(item => item.oldUri.toString() === oldSidecar.toString())) {
         continue;
       }
+
       edit.renameFile(oldSidecar, newSidecar, { overwrite: false });
     } catch {
       // No sidecar file, so there is nothing to rename.
     }
   }
+
   return edit;
 }
 

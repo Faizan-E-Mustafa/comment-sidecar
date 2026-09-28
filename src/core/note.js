@@ -2,6 +2,7 @@
 const { randomUUID } = require('node:crypto');
 const { linesOf, sourceHash, assertLine } = require('./text');
 const { anchorAt } = require('./fingerprints');
+
 const MAX_NOTES = 1000;
 const MAX_COMMENT_CHARS = 16000;
 const PERSISTED_STATES = ['attached', 'review', 'detached'];
@@ -15,10 +16,12 @@ function assertComment(text) {
     throw new Error(`Comment must contain 1–${MAX_COMMENT_CHARS} characters and no NUL bytes.`);
   }
 }
+
 function normalizeComment(text) {
   assertComment(text);
   return text.replace(/\r\n/g, '\n');
 }
+
 function assertAnchor(anchor) {
   if (
     !anchor
@@ -32,6 +35,7 @@ function assertAnchor(anchor) {
     throw new Error('Invalid anchor context counts.');
   }
 }
+
 function assertNote(note) {
   assertComment(note.text);
   if (!ID.test(note.id)) {
@@ -43,14 +47,17 @@ function assertNote(note) {
   if (!PERSISTED_STATES.includes(note.state)) {
     throw new Error('Invalid note state.');
   }
+
   assertAnchor(note.anchor);
   if (!Number.isSafeInteger(note.line) || note.line <= note.anchor.before) {
     throw new Error('Invalid anchor line.');
   }
 }
+
 function createNote(source, line, text, options = {}) {
   return noteAt(linesOf(source), line, text, { ...options, base: options.base || sourceHash(source) });
 }
+
 // Like createNote, for callers that place many notes in the same source and split it once.
 function noteAt(lines, line, text, options) {
   assertLine(line, lines.length);
@@ -63,4 +70,5 @@ function noteAt(lines, line, text, options) {
     anchor: anchorAt(lines, line),
   };
 }
+
 module.exports = { createNote, noteAt, assertNote, assertComment, normalizeComment, MAX_NOTES, ID_PATTERN, PERSISTED_STATES };

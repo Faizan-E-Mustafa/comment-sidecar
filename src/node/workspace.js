@@ -4,7 +4,9 @@ const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { hash } = require('../core/text');
 const { sidecarOf, isSidecar } = require('../core/sidecar');
+
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
+
 const IGNORED = new Set([
   '.git',
   'node_modules',
@@ -21,6 +23,7 @@ function inside(root, file) {
   const relative = path.relative(root, file);
   return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
 }
+
 async function resolveSource(root, file) {
   const requestedRoot = path.resolve(root);
   const canonicalRoot = await fs.realpath(requestedRoot);
@@ -54,6 +57,7 @@ async function resolveSource(root, file) {
     if (!lexicalRoot) {
       throw new Error('File must be inside the selected workspace.');
     }
+
     throw error;
   }
 
@@ -85,6 +89,7 @@ async function resolveSource(root, file) {
     file: path.relative(canonicalRoot, real).split(path.sep).join('/'),
   };
 }
+
 async function readText(file, optional = false) {
   let handle;
   try {
@@ -112,11 +117,13 @@ async function readText(file, optional = false) {
     if (optional && error.code === 'ENOENT') {
       return null;
     }
+
     throw error;
   } finally {
     await handle?.close();
   }
 }
+
 async function withLock(file, action) {
   const lock = `${file}.lock`;
   let handle;
@@ -129,9 +136,11 @@ async function withLock(file, action) {
       if (error.code !== 'EEXIST') {
         throw error;
       }
+
       await new Promise(resolve => setTimeout(resolve, 25));
     }
   }
+
   if (!handle) {
     throw new Error(`Sidecar is busy. Retry; if a crashed process left ${path.basename(lock)}, remove it only after confirming no writer is running.`);
   }
@@ -143,6 +152,7 @@ async function withLock(file, action) {
     await fs.unlink(lock).catch(() => {});
   }
 }
+
 async function atomicWrite(file, value, expectedHash) {
   const current = await readText(file, true);
   if (hash(current ?? '') !== expectedHash) {
@@ -156,11 +166,13 @@ async function atomicWrite(file, value, expectedHash) {
     if (hash(latest ?? '') !== expectedHash) {
       throw new Error('Sidecar changed concurrently. Read again before writing.');
     }
+
     await fs.rename(temp, file);
   } finally {
     await fs.unlink(temp).catch(() => {});
   }
 }
+
 async function findSidecars(root, limit = 5000) {
   const result = [];
   const pending = [await fs.realpath(root)];
@@ -193,4 +205,5 @@ async function findSidecars(root, limit = 5000) {
 
   return result.sort();
 }
+
 module.exports = { resolveSource, readText, withLock, atomicWrite, findSidecars, MAX_FILE_BYTES };

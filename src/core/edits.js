@@ -11,6 +11,7 @@ function applyChanges(source, changes) {
   for (const edit of [...changes].sort((a, b) => b.rangeOffset - a.rangeOffset || b.rangeLength - a.rangeLength)) {
     result = result.slice(0, edit.rangeOffset) + edit.text + result.slice(edit.rangeOffset + edit.rangeLength);
   }
+
   return result;
 }
 
@@ -42,6 +43,7 @@ function matchLines(a, b) {
   while (head < a.length && head < b.length && a[head] === b[head]) {
     head++;
   }
+
   let tail = 0;
   while (tail < a.length - head && tail < b.length - head && a[a.length - 1 - tail] === b[b.length - 1 - tail]) {
     tail++;
@@ -51,6 +53,7 @@ function matchLines(a, b) {
   for (let i = 0; i < head; i++) {
     pairs.push([i, i]);
   }
+
   const rows = a.length - head - tail;
   const columns = b.length - head - tail;
   if (rows && columns && rows * columns <= MAX_DIFF_CELLS) {
@@ -65,6 +68,7 @@ function matchLines(a, b) {
         }
       }
     }
+
     let i = 0;
     let j = 0;
     while (i < rows && j < columns) {
@@ -79,9 +83,11 @@ function matchLines(a, b) {
       }
     }
   }
+
   for (let k = tail; k > 0; k--) {
     pairs.push([a.length - k, b.length - k]);
   }
+
   return pairs;
 }
 
@@ -100,6 +106,7 @@ function diffRegion(oldSource, offsets, oldLines, region) {
     text += oldSource.slice(cursor, edit.rangeOffset) + edit.text;
     cursor = edit.rangeOffset + edit.rangeLength;
   }
+
   text += oldSource.slice(cursor, end);
 
   const before = hasLines ? oldLines.slice(region.first - 1, region.last) : [];
@@ -125,6 +132,7 @@ function diffRegion(oldSource, offsets, oldLines, region) {
       for (let k = i; k < nextI; k++) {
         removed.push(k);
       }
+
       for (let k = j; k < nextJ; k++) {
         inserted.push(k);
       }
@@ -132,9 +140,11 @@ function diffRegion(oldSource, offsets, oldLines, region) {
     if (nextI < before.length) {
       matched.set(nextI, nextJ);
     }
+
     i = nextI + 1;
     j = nextJ + 1;
   }
+
   return { ...region, before, after, matched, edited, removed: new Set(removed), inserted };
 }
 
@@ -148,11 +158,13 @@ function findMoves(regions) {
     for (const index of region.removed) {
       count(removedTexts, region.before[index]);
     }
+
     for (const index of region.inserted) {
       count(insertedTexts, region.after[index]);
       insertedAt.set(region.after[index], region.newFirst + index);
     }
   }
+
   return text => (removedTexts.get(text) === 1 && insertedTexts.get(text) === 1 ? insertedAt.get(text) : null);
 }
 
@@ -169,6 +181,7 @@ function findPaste(regions, removed) {
         runs.push({ start: index, end: index + 1 });
       }
     }
+
     for (const run of runs) {
       for (let at = run.start; at + removed.lines.length <= run.end; at++) {
         if (removed.lines.every((line, k) => region.after[at + k] === line)) {
@@ -177,6 +190,7 @@ function findPaste(regions, removed) {
       }
     }
   }
+
   if (hits.length === 1) {
     return hits[0];
   }
@@ -190,6 +204,7 @@ function findPaste(regions, removed) {
       }
     }
   }
+
   return single.length === 1 ? single[0] : null;
 }
 
@@ -203,8 +218,10 @@ function trackEdits(oldSource, newSource, results, changes) {
     if (!isValidEdit(edit, previousEnd, oldSource.length)) {
       throw new Error('Invalid or overlapping editor changes.');
     }
+
     previousEnd = edit.rangeOffset + edit.rangeLength;
   }
+
   if (applyChanges(oldSource, changes) !== newSource) {
     throw new Error('Editor changes do not match the new document.');
   }
@@ -216,6 +233,7 @@ function trackEdits(oldSource, newSource, results, changes) {
     if (!edit.rangeLength && !edit.text) {
       continue;
     }
+
     const [first, last] = spanOf(offsets, edit);
     const previous = spans[spans.length - 1];
     if (previous && first <= previous.last) {
@@ -241,11 +259,13 @@ function trackEdits(oldSource, newSource, results, changes) {
       region.last += count;
     }
   });
+
   let shift = 0;
   for (const region of regions) {
     region.newFirst = region.first + shift;
     shift += region.after.length - region.before.length;
   }
+
   const moveOf = findMoves(regions);
 
   return results.map(result => {
@@ -254,6 +274,7 @@ function trackEdits(oldSource, newSource, results, changes) {
       if (line === null) {
         return result;
       }
+
       const note = result.removed.note;
       return {
         note,
@@ -269,8 +290,10 @@ function trackEdits(oldSource, newSource, results, changes) {
       if (status !== 'review' && line !== result.line) {
         status = 'moved';
       }
+
       return { ...result, line, status, reason };
     };
+
     if (!region) {
       let delta = 0;
       for (const candidate of regions) {
@@ -278,6 +301,7 @@ function trackEdits(oldSource, newSource, results, changes) {
           delta += candidate.after.length - candidate.before.length;
         }
       }
+
       return moved(result.line + delta, 'Position tracked through editor changes; meaning is not verified.');
     }
 
@@ -293,6 +317,7 @@ function trackEdits(oldSource, newSource, results, changes) {
         reason: 'The annotated line was edited. Review the comment.',
       };
     }
+
     const destination = moveOf(region.before[index]);
     if (destination !== null) {
       return moved(destination, 'The line was moved; meaning is not verified.');
@@ -303,10 +328,12 @@ function trackEdits(oldSource, newSource, results, changes) {
     while (region.removed.has(from - 1)) {
       from--;
     }
+
     let to = index;
     while (region.removed.has(to + 1)) {
       to++;
     }
+
     return {
       note: { ...result.note, state: 'detached' },
       line: null,
@@ -316,4 +343,5 @@ function trackEdits(oldSource, newSource, results, changes) {
     };
   });
 }
+
 module.exports = { trackEdits, applyChanges };

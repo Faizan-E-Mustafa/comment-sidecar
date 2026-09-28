@@ -53,6 +53,7 @@ test('CLI version and help match the package being shipped', () => {
       assert.equal(result.stdout.trim(), manifest.version);
     }
   }
+
   assert.equal(argumentsOf(['--version']).flags.version, true);
 });
 

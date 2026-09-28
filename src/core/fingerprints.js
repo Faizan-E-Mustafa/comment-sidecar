@@ -3,6 +3,7 @@ const { hash } = require('./text');
 
 // Hash the exact lines, not normalized syntax; array encoding preserves boundaries.
 function contextHash(lines) { return hash(JSON.stringify(lines)); }
+
 function anchorAt(lines, line) {
   const target = lines[line - 1];
   const before = lines.slice(Math.max(0, line - 3), line - 1);
@@ -15,4 +16,5 @@ function anchorAt(lines, line) {
     context: contextHash([...before, target, ...after]),
   };
 }
+
 module.exports = { contextHash, anchorAt };

@@ -7,21 +7,26 @@ function resolveNotes(source, notes) {
   if (!notes.length) {
     return [];
   }
+
   const lines = linesOf(source);
   const base = sourceHash(source);
   const lineHashes = new Map();
   let positionsByHash;
+
   function digestOf(text) {
     if (text === undefined) {
       return undefined;
     }
+
     let digest = lineHashes.get(text);
     if (!digest) {
       digest = hash(text);
       lineHashes.set(text, digest);
     }
+
     return digest;
   }
+
   function candidatesFor(target) {
     if (!positionsByHash) {
       positionsByHash = new Map();
@@ -35,13 +40,16 @@ function resolveNotes(source, notes) {
         }
       }
     }
+
     return positionsByHash.get(target) || [];
   }
+
   return notes.map(note => {
     const anchor = note.anchor;
     if (!anchor) {
       throw new Error(`Comment ${note.id} has no anchor fingerprint.`);
     }
+
     const result = (line, status, reason) => ({ note, line, status, reason });
 
     if (note.state === 'detached') {
@@ -57,6 +65,7 @@ function resolveNotes(source, notes) {
       if (start < 0 || line + anchor.after > lines.length) {
         return false;
       }
+
       return contextHash(lines.slice(start, line + anchor.after)) === anchor.context;
     });
 
@@ -69,6 +78,7 @@ function resolveNotes(source, notes) {
       } else {
         status = 'moved';
       }
+
       return result(exact[0], status, 'Target and recorded neighboring lines match uniquely; meaning is not verified.');
     }
     if (exact.length > 1 || candidates.length > 1) {
@@ -77,6 +87,7 @@ function resolveNotes(source, notes) {
     if (candidates.length === 1 && anchor.strong) {
       return result(candidates[0], 'review', 'Only the target text matches; neighboring context changed. Verify this provisional attachment.');
     }
+
     return result(null, 'detached', 'The original target cannot be located confidently.');
   });
 }
@@ -88,6 +99,7 @@ function rebaseNotes(source, results) {
     if (result.line === null) {
       return result.note;
     }
+
     return noteAt(lines, result.line, result.note.text, {
       id: result.note.id, base, state: result.status === 'review' ? 'review' : 'attached',
     });
@@ -103,14 +115,17 @@ function settleNotes(source, results) {
     if (result.line === null) {
       return true;
     }
+
     return alone[i].line === result.line && (alone[i].status === 'review') === (result.status === 'review');
   });
+
   const rewriting = keeps.includes(false);
   const rebased = rebaseNotes(source, results);
   return results.map((result, i) => {
     if (keeps[i] && !(rewriting && alone[i].status === 'moved')) {
       return result.note;
     }
+
     return rebased[i];
   });
 }
@@ -125,6 +140,7 @@ function indexResults(results) {
     if (result.line === null) {
       continue;
     }
+
     const items = byLine.get(result.line);
     if (items) {
       items.push(result);
@@ -132,6 +148,8 @@ function indexResults(results) {
       byLine.set(result.line, [result]);
     }
   }
+
   return byLine;
 }
+
 module.exports = { resolveNotes, rebaseNotes, settleNotes, indexResults, NEEDS_ATTENTION };

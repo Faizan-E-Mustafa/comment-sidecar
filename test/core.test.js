@@ -7,6 +7,7 @@ const { sourceHash } = require('../src/core/text');
 const { resolveNotes, rebaseNotes, settleNotes } = require('../src/core/anchors');
 const { render } = require('../src/core/render');
 const { trackEdits, applyChanges } = require('../src/core/edits');
+
 const SOURCE = ['function App() {', '  const ready = session.ready;', '  if (!ready) return null;', '  return render();', '}', ''].join('\n');
 const note = () => createNote(SOURCE, 3, 'Wait for restoration, not merely a user value.');
 
@@ -185,6 +186,7 @@ function span(line) {
   const start = SOURCE.split('\n').slice(0, line - 1).join('\n').length + (line > 1 ? 1 : 0);
   return [start, start + SOURCE.split('\n')[line - 1].length];
 }
+
 function track(results, changes, source = SOURCE) {
   return trackEdits(source, applyChanges(source, changes), results, changes);
 }

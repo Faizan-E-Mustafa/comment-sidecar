@@ -27,6 +27,7 @@ function activate(context) {
 
   const timers = new Map();
   const log = error => output.appendLine(`[${new Date().toISOString()}] ${error.message || error}`);
+
   function updated(uri) {
     const key = uri.toString();
     clearTimeout(timers.get(key));
@@ -36,6 +37,7 @@ function activate(context) {
       previewEvents.fire(previewUri(uri));
     }, 100));
   }
+
   const store = new Store(updated, log);
 
   async function invalidateSource(uri) {
@@ -45,6 +47,7 @@ function activate(context) {
       updated(document.uri);
     }
   }
+
   const changedSidecar = uri => invalidateSource(vscode.Uri.file(sourceOf(uri.fsPath))).catch(log);
   const drafts = new DraftProvider(invalidateSource);
   const previewUri = uri => vscode.Uri.from({
@@ -59,9 +62,11 @@ function activate(context) {
       if (editor.document.uri.toString() !== uri.toString()) {
         continue;
       }
+
       highlights.apply(editor, new Map(), 'off');
       editor.setDecorations(decoration, []);
     }
+
     if (vscode.window.activeTextEditor?.document.uri.toString() === uri.toString()) {
       status.hide();
     }
@@ -102,6 +107,7 @@ function activate(context) {
         if (editor.document.uri.toString() !== uri.toString()) {
           continue;
         }
+
         highlights.apply(editor, entry.byLine, settings.highlightStyle);
         editor.setDecorations(decoration, options);
       }
@@ -133,6 +139,7 @@ function activate(context) {
         if (!entry) {
           return 'No source context available.';
         }
+
         return render(entry.source, entry.results, {
           file: entry.snapshot.file,
           end: Math.min(document.lineCount, 1000),
@@ -147,6 +154,7 @@ function activate(context) {
           if (token.isCancellationRequested || !entry) {
             return undefined;
           }
+
           const items = entry.byLine.get(position.line + 1);
           if (!items?.length) {
             return undefined;
@@ -173,6 +181,7 @@ function activate(context) {
         void changedSidecar(document.uri);
         return;
       }
+
       void store.saved(document);
     }),
     vscode.workspace.onDidCloseTextDocument(document => {
@@ -195,6 +204,7 @@ function activate(context) {
       if (!event.affectsConfiguration('commentSidecar')) {
         return;
       }
+
       for (const editor of vscode.window.visibleTextEditors) {
         updated(editor.document.uri);
       }
@@ -216,7 +226,10 @@ function activate(context) {
   for (const editor of vscode.window.visibleTextEditors) {
     updated(editor.document.uri);
   }
+
   return { store, drafts, refresh };
 }
+
 function deactivate() {}
+
 module.exports = { activate, deactivate };

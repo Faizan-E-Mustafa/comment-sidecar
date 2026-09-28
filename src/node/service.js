@@ -26,6 +26,7 @@ async function load(root, file) {
     results: resolveNotes(source, notes),
   };
 }
+
 async function read(root, file, options = {}) {
   const snapshot = await load(root, file);
 
@@ -38,6 +39,7 @@ async function read(root, file, options = {}) {
     }),
   };
 }
+
 function requireSnapshot(snapshot, options) {
   if (options.expectedSource !== snapshot.sourceHash) {
     throw new Error('Source revision is missing or changed. Read the file and use its source hash.');
@@ -46,6 +48,7 @@ function requireSnapshot(snapshot, options) {
     throw new Error('Sidecar revision is missing or changed. Read the file and use its sidecar hash.');
   }
 }
+
 async function write(root, file, options) {
   const paths = await resolveSource(root, file);
 
@@ -92,6 +95,7 @@ async function write(root, file, options) {
         if (resolved.line === null) {
           throw new Error('Unresolved comments must be reanchored explicitly.');
         }
+
         notes[index] = createNote(snapshot.source, resolved.line, notes[index].text, { id });
         break;
       }
@@ -119,6 +123,7 @@ async function write(root, file, options) {
     };
   });
 }
+
 async function saveTracked(snapshot, source, results) {
   return withLock(snapshot.sidecarPath, async () => {
     if (sourceHash(await readText(snapshot.sourcePath)) !== sourceHash(source)) {
@@ -137,6 +142,7 @@ async function saveTracked(snapshot, source, results) {
     await atomicWrite(snapshot.sidecarPath, raw, snapshot.sidecarHash);
   });
 }
+
 async function check(root, file) {
   const sources = file
     ? [(await resolveSource(root, file)).sourcePath]
@@ -171,4 +177,5 @@ async function check(root, file) {
     reports,
   };
 }
+
 module.exports = { load, read, write, check, saveTracked };

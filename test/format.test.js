@@ -5,7 +5,9 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const { promisify } = require('node:util');
+
 const exec = promisify(require('node:child_process').execFile);
+
 const { serialize, parse } = require('../src/core/format');
 const { createNote } = require('../src/core/note');
 const { resolveNotes, rebaseNotes } = require('../src/core/anchors');
@@ -13,6 +15,7 @@ const { applyChanges, trackEdits } = require('../src/core/edits');
 const { render } = require('../src/core/render');
 const service = require('../src/node/service');
 const { sourceHash, hash } = require('../src/core/text');
+
 const SOURCE = 'function App() {\n  const ready = session.ready;\n  if (!ready) return null;\n  return render();\n}\n';
 const note = () => createNote(SOURCE, 3, 'Wait until restoration finishes.', { id: 'sc_wait' });
 const v2 = notes => parse(serialize('app.ts', notes)).notes;
@@ -30,6 +33,7 @@ test('v2 stores coordinates, fingerprints and comments without copying target or
   for (const line of SOURCE.trimEnd().split('\n')) {
     assert.ok(!raw.split('\n').includes(` ${line}`));
   }
+
   assert.doesNotMatch(raw, /session\.ready|function App|return render|return null/);
 
   const parsed = parse(raw).notes[0];
@@ -79,6 +83,7 @@ const cases = [
   ['rewritten target', SOURCE.replace('!ready', 'loading'), null, 'detached'],
   ['deleted target', SOURCE.replace('  if (!ready) return null;\n', ''), null, 'detached'],
 ];
+
 for (const [name, source, line, status] of cases) {
   test(`v2 resolves ${name} conservatively`, () => {
     const result = resolveNotes(source, v2([note()]))[0];
@@ -128,6 +133,7 @@ test('v2 rejects source context, additions, deletions, incomplete bodies and mal
   for (const replacement of ['+const injected = 1;', '-const old = 1;', ' const copied = 1;']) {
     assert.throws(() => parse(raw.replace('+// Wait until restoration finishes.', replacement)), /not allowed/);
   }
+
   assert.throws(() => parse(raw.replace('+// Wait until restoration finishes.\n', '')), /Comment/);
   assert.throws(() => parse(raw.replace('target=', 'target=z')), /fingerprint/);
   assert.throws(() => parse(raw.replace('before=2', 'before=9')), /fingerprint/);
@@ -241,6 +247,7 @@ async function workspace(t, sidecar) {
   if (sidecar !== undefined) {
     await fs.writeFile(path.join(root, 'app.ts.comment'), sidecar);
   }
+
   return root;
 }
 

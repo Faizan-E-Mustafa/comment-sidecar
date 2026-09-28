@@ -19,6 +19,7 @@ function skipSpace(code, index) {
   while (index < code.length && /\s/.test(code[index])) {
     index += 1;
   }
+
   return index;
 }
 
@@ -35,6 +36,7 @@ function closingParen(code, open) {
       return index;
     }
   }
+
   return code.length;
 }
 
@@ -51,6 +53,7 @@ function commentEnd(source, start) {
     const close = source.indexOf('*/', start + 2);
     return close === -1 ? source.length : close + 2;
   }
+
   return start;
 }
 
@@ -59,6 +62,7 @@ function quotedEnd(source, start) {
   while (index < source.length && source[index] !== source[start] && source[index] !== '\n') {
     index += source[index] === '\\' ? 2 : 1;
   }
+
   return index + 1;
 }
 
@@ -78,9 +82,11 @@ function expressionEnd(source, start) {
       if (char === '}') {
         depth -= 1;
       }
+
       index += 1;
     }
   }
+
   return index;
 }
 
@@ -95,6 +101,7 @@ function templateEnd(source, start) {
       index += 1;
     }
   }
+
   return index + 1;
 }
 
@@ -109,12 +116,15 @@ function regexEnd(source, start) {
     } else if (source[index] === ']') {
       inClass = false;
     }
+
     index += 1;
   }
+
   index += 1;
   while (/[a-z]/.test(source[index] ?? '')) {
     index += 1;
   }
+
   return index;
 }
 
@@ -135,6 +145,7 @@ function literalEnd(source, index, code) {
   if (char === '/' && regexMayStart(code)) {
     return regexEnd(source, index);
   }
+
   return index;
 }
 
@@ -156,6 +167,7 @@ function codeOnly(source) {
       index += 1;
     }
   }
+
   return code;
 }
 
@@ -167,6 +179,7 @@ function bodyStart(code, keyword, afterKeyword) {
   if (HAS_CONDITION.has(keyword) && code[index] === '(') {
     index = skipSpace(code, closingParen(code, index) + 1);
   }
+
   return index;
 }
 
@@ -192,6 +205,7 @@ function blockProblems(code) {
       found.push({ index: match.index, message: `Put the body of \`${keyword}\` on its own lines.` });
     }
   }
+
   return found;
 }
 
@@ -212,6 +226,7 @@ function sharedLines(code) {
       }
     }
   }
+
   return found;
 }
 
@@ -219,6 +234,7 @@ function isTernaryMark(code, index) {
   if (code[index] !== '?') {
     return false;
   }
+
   const next = code[index + 1];
   const optionalChain = next === '.' && !/\d/.test(code[index + 2]);
   return next !== '?' && code[index - 1] !== '?' && !optionalChain;
@@ -242,9 +258,11 @@ function nestedTernaries(code) {
       if (inside[inside.length - 1]) {
         found.push({ index, message: 'Do not nest ternaries.' });
       }
+
       inside[inside.length - 1] = true;
     }
   }
+
   return found;
 }
 
@@ -265,15 +283,18 @@ function main() {
       count++;
     }
   }
+
   if (count > 0) {
     console.error(`Style violations: ${count}`);
     process.exitCode = 1;
     return;
   }
+
   console.log(`Style checked ${files.length} JavaScript files.`);
 }
 
 if (require.main === module) {
   main();
 }
+
 module.exports = { findViolations };

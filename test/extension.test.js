@@ -343,10 +343,13 @@ function makeEditor(document) {
 }
 
 const originalLoad = Module._load;
+
 Module._load = function (request, ...args) {
   return request === 'vscode' ? vscode : originalLoad.call(this, request, ...args);
 };
+
 const { activate } = require('../src/extension/extension');
+
 Module._load = originalLoad;
 
 async function setup(t, options = {}) {

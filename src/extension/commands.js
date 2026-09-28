@@ -47,6 +47,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
     if (!folder) {
       throw new Error('Open a folder first.');
     }
+
     return folder.uri.fsPath;
   }
 
@@ -123,6 +124,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
     });
     void vscode.window.showInformationMessage('Write the comment here, then save. Only the sibling .comment file will be written.');
   });
+
   command('edit', async () => {
     const { editor, root, entry } = await current(true);
     const item = await pick(entry, editor.selection.active.line + 1);
@@ -142,6 +144,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
       preview: false,
     });
   });
+
   command('remove', () => mutate('remove'));
   command('review', () => mutate('review'));
   command('reanchor', () => mutate('reanchor', true));
@@ -152,6 +155,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
       viewColumn: vscode.ViewColumn.Beside,
     });
   });
+
   command('preview', async () => {
     const { editor } = await current();
     const preview = await vscode.workspace.openTextDocument(previewUri(editor.document.uri));
@@ -160,6 +164,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
       preview: false,
     });
   });
+
   command('copy', async () => {
     const { editor, entry } = await current();
     const { start, end } = selectedLines(editor);
@@ -172,6 +177,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
     await vscode.env.clipboard.writeText(text);
     void vscode.window.showInformationMessage('Copied source and per-line comments with original line numbers.');
   });
+
   command('list', async () => {
     const { editor, entry } = await current();
     const item = await pick(entry, 0, true);
@@ -188,6 +194,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
     editor.revealRange(new vscode.Range(position, position));
     await vscode.commands.executeCommand('editor.action.showHover');
   });
+
   command('check', async () => {
     const root = workspaceRoot();
     const report = await service.check(root);
@@ -195,11 +202,13 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
     output.show(true);
     void vscode.window.showInformationMessage(`${report.comments} comments checked; ${report.problems} need attention.`);
   });
+
   command('copyRules', async () => {
     const invocation = `node ${JSON.stringify(context.asAbsolutePath('src/cli.js'))}`;
     await vscode.env.clipboard.writeText(await agentRules(invocation));
     void vscode.window.showInformationMessage('Copied agent instructions. Merge into AGENTS.md or a Cursor rule; existing files have not been changed.');
   });
+
   command('copyMcp', async () => {
     const root = workspaceRoot();
     const args = [context.asAbsolutePath('src/mcp.js'), '--root', root];

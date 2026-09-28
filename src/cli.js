@@ -24,6 +24,7 @@ Use --text-file PATH instead of --text for multiline comments.
 read returns revision hashes. Writes require both hashes; source files are never written.
 check exits 1 for comments requiring attention, 2 for invocation errors.
 `;
+
 function argumentsOf(argv) {
   const positional = [];
   const flags = {};
@@ -53,11 +54,13 @@ function argumentsOf(argv) {
     if (i + 1 >= argv.length) {
       throw new Error(`Missing value after ${value}`);
     }
+
     flags[name] = argv[++i];
   }
 
   return { positional, flags };
 }
+
 async function main(argv = process.argv.slice(2)) {
   const { positional, flags } = argumentsOf(argv);
   const [command, file] = positional;
@@ -81,6 +84,7 @@ async function main(argv = process.argv.slice(2)) {
     if (report.problems) {
       process.exitCode = 1;
     }
+
     return;
   }
   if (!file || positional.length > 2) {
@@ -97,6 +101,7 @@ async function main(argv = process.argv.slice(2)) {
       process.stdout.write(result.output);
       return;
     }
+
     process.stdout.write(`${JSON.stringify({
       file: result.file,
       source: result.sourceHash,
@@ -131,10 +136,12 @@ async function main(argv = process.argv.slice(2)) {
   });
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }
+
 if (require.main === module) {
   main().catch(error => {
     process.stderr.write(`Comment Sidecar: ${error.message}\n`);
     process.exitCode = 2;
   });
 }
+
 module.exports = { argumentsOf };

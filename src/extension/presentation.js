@@ -8,8 +8,10 @@ function markerText(needsReview, style) {
   if (needsReview) {
     return `${label} !`;
   }
+
   return label;
 }
+
 function markerDecorations(document, byLine, { showMarkers, markerStyle }) {
   if (!showMarkers || markerStyle === 'off') {
     return [];
@@ -20,12 +22,14 @@ function markerDecorations(document, byLine, { showMarkers, markerStyle }) {
     if (line < 1 || line > document.lineCount) {
       continue;
     }
+
     const needsReview = notes.some(item => item.status === 'review');
     options.push({
       range: document.lineAt(line - 1).range,
       renderOptions: { after: { contentText: markerText(needsReview, markerStyle) } },
     });
   }
+
   return options;
 }
 
@@ -64,8 +68,10 @@ function commentMarkdown(result, options = {}) {
     markdown.appendMarkdown('\n\n---\n');
     markdown.appendText(`${result.note.id} · ${result.status} · ${result.reason}`);
   }
+
   return markdown;
 }
+
 function diagnosticsFor(document, results) {
   return results.filter(result => NEEDS_ATTENTION.includes(result.status)).map(result => {
     const line = Math.max(0, Math.min(document.lineCount - 1, (result.line ?? 1) - 1));
@@ -82,4 +88,5 @@ function diagnosticsFor(document, results) {
     return diagnostic;
   });
 }
+
 module.exports = { sidecarDecoration, hoverHeader, commentMarkdown, diagnosticsFor, markerDecorations };

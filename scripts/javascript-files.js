@@ -19,6 +19,8 @@ function javascriptFiles() {
       }
     }
   }
+
   return files.sort();
 }
+
 module.exports = { javascriptFiles };

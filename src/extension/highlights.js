@@ -15,9 +15,11 @@ function createHighlights() {
       if (style === 'line') {
         options.backgroundColor = new vscode.ThemeColor(`commentSidecar.${state}Background`);
       }
+
       types.set(`${style}:${state}`, vscode.window.createTextEditorDecorationType(options));
     }
   }
+
   return {
     apply(editor, byLine, style) {
       const ranges = new Map([...types.keys()].map(key => [key, []]));
@@ -26,6 +28,7 @@ function createHighlights() {
         if (line > editor.document.lineCount) {
           continue;
         }
+
         const state = items.some(item => item.status === 'review') ? 'review' : 'highlight';
         const sourceLine = editor.document.lineAt(line - 1);
         const first = style === 'underline' ? Math.max(0, sourceLine.text.search(/\S/)) : 0;
@@ -46,4 +49,5 @@ function createHighlights() {
     },
   };
 }
+
 module.exports = { createHighlights };

@@ -14,6 +14,7 @@ class DraftProvider {
     this.onDidChangeFile = this.events.event;
     this.onSaved = onSaved;
   }
+
   create(snapshot, line, note) {
     const name = `${path.basename(snapshot.sourcePath)}-line-${line}.txt`;
     const uri = vscode.Uri.from({ scheme: 'comment-sidecar-draft', path: `/${randomUUID()}/${name}` });
@@ -22,13 +23,16 @@ class DraftProvider {
     });
     return uri;
   }
+
   get(uri) {
     const entry = this.entries.get(uri.toString());
     if (!entry) {
       throw vscode.FileSystemError.FileNotFound(uri);
     }
+
     return entry;
   }
+
   stat(uri) {
     const entry = this.get(uri);
     return {
@@ -38,9 +42,11 @@ class DraftProvider {
       size: Buffer.byteLength(entry.text),
     };
   }
+
   readFile(uri) {
     return Buffer.from(this.get(uri).text);
   }
+
   async writeFile(uri, content) {
     if (!vscode.workspace.isTrusted) {
       throw vscode.FileSystemError.NoPermissions('Trust the workspace before changing comments.');
@@ -72,30 +78,39 @@ class DraftProvider {
     entry.time = Date.now();
     entry.snapshot.sourceHash = result.source;
     entry.snapshot.sidecarHash = result.sidecar;
+
     this.events.fire([{ type: vscode.FileChangeType.Changed, uri }]);
     await this.onSaved(vscode.Uri.file(entry.snapshot.sourcePath));
   }
+
   watch() {
     return new vscode.Disposable(() => {});
   }
+
   readDirectory() {
     return [];
   }
+
   createDirectory() {
     throw vscode.FileSystemError.NoPermissions();
   }
+
   delete() {
     throw vscode.FileSystemError.NoPermissions();
   }
+
   rename() {
     throw vscode.FileSystemError.NoPermissions();
   }
+
   close(uri) {
     this.entries.delete(uri.toString());
   }
+
   dispose() {
     this.entries.clear();
     this.events.dispose();
   }
 }
+
 module.exports = { DraftProvider };

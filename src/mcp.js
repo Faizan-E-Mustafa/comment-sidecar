@@ -3,6 +3,7 @@
 const path = require('node:path');
 const service = require('./node/service');
 const { name, version } = require('../package.json');
+
 const VERSION = '2025-11-25';
 const SUPPORTED = new Set([VERSION, '2025-06-18', '2025-03-26', '2024-11-05']);
 const MAX_MESSAGE = 1024 * 1024;
@@ -36,20 +37,24 @@ const TOOLS = [
     },
   },
 ];
+
 function validate(schema, input) {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new Error('Tool arguments must be an object.');
   }
+
   for (const name of schema.required || []) {
     if (!Object.hasOwn(input, name)) {
       throw new Error(`Missing argument: ${name}`);
     }
   }
+
   for (const [key, value] of Object.entries(input)) {
     const property = schema.properties[key];
     if (!property) {
       throw new Error(`Unknown argument: ${key}`);
     }
+
     const validType = property.type === 'integer'
       ? Number.isInteger(value) && value >= property.minimum
       : typeof value === property.type;
@@ -64,9 +69,11 @@ function validate(schema, input) {
     }
   }
 }
+
 function error(id, code, message) {
   return { jsonrpc: '2.0', id: id ?? null, error: { code, message } };
 }
+
 function createHandler(root) {
   let initialized = false;
   let negotiated = false;
@@ -87,6 +94,7 @@ function createHandler(root) {
       if (method === 'notifications/initialized' && negotiated) {
         initialized = true;
       }
+
       return null;
     }
 
@@ -127,6 +135,7 @@ function createHandler(root) {
     } catch (failure) {
       return error(id, -32602, failure.message);
     }
+
     try {
       const args = params.arguments || {};
       let text;
@@ -136,12 +145,14 @@ function createHandler(root) {
       if (tool.name === 'comment_sidecar_check') {
         text = JSON.stringify(await service.check(root, args.file));
       }
+
       return result({ content: [{ type: 'text', text }] });
     } catch (failure) {
       return result({ isError: true, content: [{ type: 'text', text: failure.message }] });
     }
   };
 }
+
 async function main() {
   const args = process.argv.slice(2);
   let root = process.cwd();
@@ -151,6 +162,7 @@ async function main() {
       root = path.resolve(args[++i]);
       continue;
     }
+
     throw new Error('Usage: node src/mcp.js --root /absolute/workspace');
   }
 
@@ -158,6 +170,7 @@ async function main() {
   let buffer = '';
   let queue = Promise.resolve();
   let pending = 0;
+
   process.stdin.setEncoding('utf8');
   process.stdin.on('data', chunk => {
     buffer += chunk;
@@ -184,6 +197,7 @@ async function main() {
         } catch {
           response = error(null, -32700, 'Parse error');
         }
+
         if (response) {
           process.stdout.write(`${JSON.stringify(response)}\n`);
         }
@@ -196,10 +210,12 @@ async function main() {
     }
   });
 }
+
 if (require.main === module) {
   main().catch(error => {
     process.stderr.write(`${error.message}\n`);
     process.exitCode = 1;
   });
 }
+
 module.exports = { createHandler };
