@@ -139,7 +139,7 @@ npx ovsx publish comment-sidecar-<version>.vsix -p <token>  # Open VSX
 ```
 
 - **Visual Studio Marketplace:** upload the file at marketplace.visualstudio.com/manage → zainzafar90 → ⋯ → Update. A version number can be published only once, so bump `package.json` first.
-- **Open VSX** (Cursor, VSCodium): the token comes from open-vsx.org → Settings → Access Tokens. A new version can take a few minutes to appear. The `zainzafar90` namespace shows as unverified until an ownership claim at github.com/EclipseFdn/open-vsx.org is approved.
+- **Open VSX** (Cursor, VSCodium): the token comes from open-vsx.org → Settings → Access Tokens. To keep it out of your shell history, save it as `OVSX_PAT=<token>` in a `.env` file at the repository root (Git and `vsce` both ignore it), run `set -a; source .env; set +a`, and leave off `-p`. A new version can take a few minutes to appear. The `zainzafar90` namespace shows as unverified until an ownership claim at github.com/EclipseFdn/open-vsx.org is approved.
 
 ## Benchmarks
 

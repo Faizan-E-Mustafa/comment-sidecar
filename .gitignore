@@ -4,6 +4,7 @@ node_modules/
 *.comment.lock
 *.comment.*.tmp
 .DS_Store
+.env
 
 dist/
 reports/
