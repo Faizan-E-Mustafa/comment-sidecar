@@ -148,5 +148,6 @@ export const terminal = (await service.read(examples, 'app.tsx', READ)).output.t
 export const extension = {
   version: manifest.version,
   id: `${manifest.publisher}.${manifest.name}`,
+  openVsx: `https://open-vsx.org/extension/${manifest.publisher}/${manifest.name}`,
   repository: manifest.repository.url,
 };

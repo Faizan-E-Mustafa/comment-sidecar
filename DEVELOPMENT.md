@@ -126,6 +126,18 @@ What the tests do **not** prove: real VS Code or Cursor rendering, Windows or ma
 
 Rebuilding from an extracted source ZIP produces identical archives.
 
+### Publishing
+
+Publish one file to both stores. Package it with `vsce`, which rewrites the README's relative image links to GitHub URLs so they load on the store pages:
+
+```sh
+npx @vscode/vsce package --no-dependencies                # writes comment-sidecar-<version>.vsix
+npx ovsx publish comment-sidecar-<version>.vsix -p <token>  # Open VSX
+```
+
+- **Visual Studio Marketplace:** upload the file at marketplace.visualstudio.com/manage → zainzafar90 → ⋯ → Update. A version number can be published only once, so bump `package.json` first.
+- **Open VSX** (Cursor, VSCodium): the token comes from open-vsx.org → Settings → Access Tokens. A new version can take a few minutes to appear. The `zainzafar90` namespace shows as unverified until an ownership claim at github.com/EclipseFdn/open-vsx.org is approved.
+
 ## Benchmarks
 
 `npm run benchmark` times note creation, parsing, writing, matching, live edit tracking and rendering on 1,000- and 10,000-line files. Results go to `reports/BENCHMARK.json`.

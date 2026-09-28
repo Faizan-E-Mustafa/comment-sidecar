@@ -11,7 +11,7 @@ import logo from '../assets/logo.svg?url';
 import favicon from '../assets/favicon-32.png?url';
 import touchIcon from '../assets/apple-touch-icon.png?url';
 
-const { version, id, repository: REPOSITORY } = extension;
+const { version, id, openVsx: OPEN_VSX, repository: REPOSITORY } = extension;
 const MARKETPLACE = `https://marketplace.visualstudio.com/items?itemName=${id}`;
 const INSTALL = `code --install-extension ${id}`;
 const DESCRIPTION = 'Explain a line of code without touching the code. Comments live in a .comment file beside your source, follow their line as the code moves, and can be read by AI agents.';
@@ -187,9 +187,8 @@ const FAQ = [
           </div>
           <div class="panel" role="tabpanel" id="panel-cursor" aria-labelledby="tab-cursor" hidden>
             <ol>
-              <li>Open <a href={MARKETPLACE}>the Marketplace page</a> and choose <strong>Download Extension</strong>.</li>
-              <li>In Cursor, open Extensions, choose <strong>⋯ → Install from VSIX</strong> and pick the file.</li>
-              <li>Put the cursor on a line and press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>;</kbd>.</li>
+              <li>In Cursor, open Extensions and search for <strong>Comment Sidecar</strong>. It comes from <a href={OPEN_VSX}>Open VSX</a>, which VSCodium uses too.</li>
+              <li>Install it, then put the cursor on a line and press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>;</kbd> (<kbd>Cmd</kbd> <kbd>Alt</kbd> <kbd>;</kbd> on macOS).</li>
             </ol>
           </div>
           <div class="panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp" hidden>
