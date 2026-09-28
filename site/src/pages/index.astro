@@ -16,6 +16,8 @@ const { version, id, openVsx: OPEN_VSX, repository: REPOSITORY } = extension;
 const MARKETPLACE = `https://marketplace.visualstudio.com/items?itemName=${id}`;
 const INSTALL = `code --install-extension ${id}`;
 const DESCRIPTION = 'Explain a line of code without touching the code. Comments live in a .comment file beside your source, follow their line as the code moves, and can be read by AI agents.';
+// The first release (0.2.0) was live on the VS Code Marketplace by this time.
+const PUBLISHED = '2026-09-27T22:54:00Z';
 const ANATOMY_PARTS = [1, 1, 1, 2, 3, 4];
 const LEGEND = [
   ['Header', 'Format version and file names.'],
@@ -51,6 +53,7 @@ const FAQ = [
     <title>Comment Sidecar</title>
     <meta name="description" content={DESCRIPTION} />
     <meta name="author" content="Zain Zafar" />
+    <meta name="publish_date" property="og:publish_date" content={PUBLISHED} />
     <meta name="theme-color" content="#070B15" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="Comment Sidecar" />
