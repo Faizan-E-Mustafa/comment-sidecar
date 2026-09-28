@@ -11,3 +11,4 @@ examples/**
 DEVELOPMENT.md
 AGENTS.md
 .gitignore
+site/**

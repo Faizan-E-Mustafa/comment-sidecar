@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Comment Sidecar</title>
+  <defs>
+    <linearGradient id="lc-bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#15213A"/><stop offset="1" stop-color="#0A1020"/></linearGradient>
+    <radialGradient id="lc-glow" cx=".25" cy=".1" r=".9"><stop offset="0" stop-color="#2A4A7A" stop-opacity=".45"/><stop offset="1" stop-color="#2A4A7A" stop-opacity="0"/></radialGradient>
+    <clipPath id="lc-clip"><rect width="256" height="256" rx="56"/></clipPath>
+  </defs>
+  <g clip-path="url(#lc-clip)">
+    <rect width="256" height="256" fill="url(#lc-bg)"/>
+    <rect width="256" height="256" fill="url(#lc-glow)"/>
+    <rect y="106" width="256" height="44" fill="#4CA6FF" fill-opacity=".17"/>
+    <rect x="42" y="106" width="6" height="44" fill="#71B7FF"/>
+  </g>
+  <rect x="66" y="80" width="76" height="16" rx="8" fill="#34435C"/>
+  <rect x="66" y="120" width="92" height="16" rx="8" fill="#EEF4FF"/>
+  <rect x="66" y="160" width="56" height="16" rx="8" fill="#34435C"/>
+  <circle cx="194" cy="128" r="21.75" fill="none" stroke-width="9" stroke-linecap="round" stroke-dasharray="4.666 12.416" stroke-dashoffset="-6.208" transform="rotate(-90 194 128)" stroke="#71B7FF"/>
+  <rect x=".5" y=".5" width="255" height="255" rx="55.5" fill="none" stroke="#FFFFFF" stroke-opacity=".07"/>
+</svg>

@@ -1,0 +1,304 @@
+---
+// The live example: app.tsx and app.tsx.comment side by side while the code around a comment changes.
+// Everything is rendered here at build time; the script below only switches between the four states.
+import Window from './Window.astro';
+import { demo } from '../lib/example.js';
+import { highlight, marker, segments } from '../lib/markup.js';
+
+const POINTER = '<svg class="cursor" viewBox="0 0 34 40" aria-hidden="true"><path d="M4 3 L4 31 L11.5 24.5 L16.5 36 L21.5 33.8 L16.6 22.6 L26.5 22.2 Z" fill="#F4F8FF" stroke="#0A111F" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const from = demo.steps[0].line;
+const to = demo.steps[1].line;
+const annotated = demo.rows.filter(row => row.note);
+
+// Copy and timing for each step, keyed by the step names in src/lib/example.js.
+const COPY = {
+  comment: {
+    title: 'Comment a line', hint: '<kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>;</kbd>', card: true, chip: '', dwell: 4600,
+    say: `Line ${from} has a comment: ${demo.edited.text}`,
+  },
+  move: {
+    title: 'Add code above it', hint: `It moves to line ${to}`, card: false, chip: `↓ was line ${from}`, dwell: 3800,
+    say: `Three lines were added above. The comment moved with its line to line ${to}.`,
+  },
+  edit: {
+    title: 'Edit that line', hint: 'It asks for a review', card: true, chip: '', warn: true, dwell: 4600,
+    say: `Line ${to} was edited. Its comment turned amber and needs review.`,
+  },
+  review: {
+    title: 'Mark it reviewed', hint: 'Attached again', card: false, chip: '✓ reviewed', dwell: 3400,
+    say: 'The comment was marked reviewed and is attached again.',
+  },
+};
+const steps = demo.steps.map(step => ({ ...step, ...COPY[step.name] }));
+const first = steps[0];
+
+const client = {
+  editKey: demo.editKey,
+  added: demo.rows.filter(row => row.added).map(row => row.key),
+  notes: Object.fromEntries(annotated.map(row => [row.key, { id: row.note.id, text: row.note.text }])),
+  steps: steps.map(({ order, edit, review, card, chip, say, dwell }) => ({ order, edit, review, card, chip, say, dwell })),
+};
+
+function rowText(row) {
+  if (row.key === demo.editKey) {
+    const tail = row.text.slice(demo.lead.length);
+    return `<span class="t" style="--at: ${demo.lead.length}ch; --chars: ${demo.insert.length}">${highlight(demo.lead)}`
+      + `<span class="ins"><span class="edit">${highlight(demo.insert)}</span></span>`
+      + `<span class="tail">${highlight(tail)}${marker({ extra: `<span class="chip"></span>${POINTER}` })}</span></span>`;
+  }
+  return `<span class="t">${highlight(row.text)}${row.note ? marker() : ''}</span>`;
+}
+
+function sidecarHtml(lines) {
+  return lines.map(line => `<div class="sl"${line.id ? ` data-note="${line.id}"` : ''}>${segments(line.parts, 'c-')}</div>`).join('');
+}
+---
+<section class="demo" aria-label="Live example of a comment on app.tsx" data-demo={JSON.stringify(client)}>
+  <div class="panes">
+    <Window class="editor" tab="app.tsx" badge="TSX">
+      <div class="scroll">
+        <div class="rows" style={`--rows: ${demo.rows.length}`}>
+          {demo.rows.map((row, index) => {
+            const position = first.order.indexOf(row.key);
+            const shown = position !== -1;
+            return <div class:list={['row', { on: row.note, gone: !shown }]} data-key={row.key} style={`--i: ${shown ? position : index}`}><span class="n">{shown ? position + 1 : ''}</span><Fragment set:html={rowText(row)} /></div>;
+          })}
+        </div>
+      </div>
+      <div class="pop" aria-hidden="true" style={`--i: ${from - 1}`}><b>Comment on line {from}</b><span class="pop-text">{demo.edited.text}</span><span class="rv" hidden>Needs review</span></div>
+      <div class="status">
+        <span><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="4" cy="3.5" r="1.8" /><circle cx="4" cy="12.5" r="1.8" /><circle cx="12" cy="4.5" r="1.8" /><path d="M4 5.3v5.4M12 6.3c0 3.2-8 1.8-8 4.4" /></g></svg>main</span>
+        <span class="sb-review" hidden><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 3h11v7.5h-6l-3.2 2.7v-2.7H2.5z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" /></svg>1 to review</span>
+        <span class="sb-right">TypeScript JSX</span>
+      </div>
+    </Window>
+    <Window class="sidecar" tab="app.tsx.comment" badge="◌" note="updated on save">
+      <div class="scroll"><div class="lines" set:html={sidecarHtml(first.sidecar)} /></div>
+    </Window>
+    <svg class="wires" aria-hidden="true">
+      {annotated.map(row => <path class="wire" data-wire={row.note.id} />)}
+      {annotated.map(row => [<circle class="dot" data-dot={row.note.id} r="2.6" />, <circle class="dot" data-dot={row.note.id} r="2.6" />])}
+    </svg>
+  </div>
+  {steps.map((step, index) => <template data-sidecar={index} set:html={sidecarHtml(step.sidecar)} />)}
+  <ol class="steps">
+    {steps.map((step, index) => (
+      <li><button type="button" class:list={{ warn: step.warn }} data-step={index} aria-pressed={String(index === 0)}><span class="num">{index + 1}</span><span class="what">{step.title}</span><span class="how" set:html={step.hint} /><span class="prog"></span></button></li>
+    ))}
+  </ol>
+  <p class="sr" aria-live="polite" data-live></p>
+</section>
+
+<script>
+  const root = document.querySelector('[data-demo]');
+  if (root) {
+    run(root);
+  }
+
+  function run(root) {
+    const data = JSON.parse(root.dataset.demo);
+    const motion = !matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const editor = root.querySelector('.editor');
+    const rowsElement = root.querySelector('.rows');
+    const rows = new Map([...root.querySelectorAll('.row')].map(row => [row.dataset.key, row]));
+    const editRow = rows.get(data.editKey);
+    const chip = editRow.querySelector('.chip');
+    const cursor = editRow.querySelector('.cursor');
+    const pop = root.querySelector('.pop');
+    const popTitle = pop.querySelector('b');
+    const popText = pop.querySelector('.pop-text');
+    const popReview = pop.querySelector('.rv');
+    const statusReview = root.querySelector('.sb-review');
+    const lines = root.querySelector('.lines');
+    const templates = [...root.querySelectorAll('template[data-sidecar]')];
+    const panes = root.querySelector('.panes');
+    const wires = root.querySelector('.wires');
+    const buttons = [...root.querySelectorAll('.steps button')];
+    const live = root.querySelector('[data-live]');
+    let current = 0;
+    let hovered = null;
+
+    function apply(index, animate) {
+      const step = data.steps[index];
+      const changed = index !== current;
+      current = index;
+      editor.classList.toggle('instant', !animate);
+      [...rows.keys()].forEach((key, fullIndex) => {
+        const row = rows.get(key);
+        const position = step.order.indexOf(key);
+        const shown = position !== -1;
+        row.style.setProperty('--i', String(shown ? position : fullIndex));
+        row.classList.toggle('gone', !shown);
+        row.classList.toggle('add', shown && data.added.includes(key));
+        row.querySelector('.n').textContent = shown ? String(position + 1) : '';
+      });
+      editRow.classList.toggle('edited', step.edit);
+      editRow.classList.toggle('rev', step.review);
+      statusReview.hidden = !step.review;
+      if (step.chip) {
+        chip.textContent = step.chip;
+      }
+      chip.classList.toggle('show', Boolean(step.chip));
+      buttons.forEach((button, buttonIndex) => button.setAttribute('aria-pressed', String(buttonIndex === index)));
+      if (changed) {
+        showSidecar(index, animate);
+      }
+      placePop();
+      trackWires(animate ? 800 : 0);
+      if (!animate) {
+        void editor.offsetHeight;
+        editor.classList.remove('instant');
+      }
+    }
+
+    // Swap in the saved .comment file for this state and flash the parts that changed.
+    function showSidecar(index, animate) {
+      const before = [...lines.children].map(line => [...line.children].map(span => span.textContent));
+      lines.replaceChildren(templates[index].content.cloneNode(true));
+      if (!animate) {
+        return;
+      }
+      [...lines.children].forEach((line, lineIndex) => {
+        [...line.children].forEach((span, spanIndex) => {
+          if (before[lineIndex] && before[lineIndex][spanIndex] !== span.textContent) {
+            span.classList.add('flash');
+          }
+        });
+      });
+    }
+
+    function placePop() {
+      const step = data.steps[current];
+      const key = hovered || (step.card ? data.editKey : null);
+      cursor.classList.toggle('show', !hovered && step.card);
+      const id = key ? data.notes[key].id : null;
+      lines.querySelectorAll('.sl').forEach(line => line.classList.toggle('lit', id !== null && line.dataset.note === id));
+      if (!key) {
+        pop.classList.add('off');
+        return;
+      }
+      const index = step.order.indexOf(key);
+      popTitle.textContent = `Comment on line ${index + 1}`;
+      popText.textContent = data.notes[key].text;
+      popReview.hidden = !(key === data.editKey && step.review);
+      pop.style.setProperty('--i', String(index));
+      const row = rows.get(key);
+      const rowTop = rowsElement.offsetTop + row.offsetTop + index * row.offsetHeight;
+      pop.classList.toggle('below', rowTop - pop.offsetHeight - 8 < 4);
+      pop.classList.remove('off');
+    }
+
+    // Curved wires from each marker to its hunk header in the .comment file.
+    function drawWires() {
+      if (getComputedStyle(wires).display === 'none') {
+        return;
+      }
+      const frame = panes.getBoundingClientRect();
+      for (const [key, note] of Object.entries(data.notes)) {
+        const mark = rows.get(key).querySelector('.mk');
+        const bang = mark.querySelector('.bang');
+        const from = (bang.offsetWidth ? bang : mark.children[1]).getBoundingClientRect();
+        const to = lines.querySelector(`.sl[data-note="${note.id}"] span`).getBoundingClientRect();
+        const x1 = from.right - frame.left + 10;
+        const y1 = from.top + from.height / 2 - frame.top;
+        const x2 = to.left - frame.left - 8;
+        const y2 = to.top + to.height / 2 - frame.top;
+        const bend = Math.max(28, (x2 - x1) / 2);
+        const review = key === data.editKey && data.steps[current].review;
+        const wire = wires.querySelector(`[data-wire="${note.id}"]`);
+        wire.setAttribute('d', `M${x1} ${y1} C${x1 + bend} ${y1} ${x2 - bend} ${y2} ${x2} ${y2}`);
+        wire.classList.toggle('rev', review);
+        const [start, end] = wires.querySelectorAll(`[data-dot="${note.id}"]`);
+        start.setAttribute('cx', String(x1));
+        start.setAttribute('cy', String(y1));
+        end.setAttribute('cx', String(x2));
+        end.setAttribute('cy', String(y2));
+        start.classList.toggle('rev', review);
+        end.classList.toggle('rev', review);
+      }
+    }
+
+    let trackUntil = 0;
+    let tracking = false;
+    function trackWires(duration) {
+      trackUntil = Math.max(trackUntil, performance.now() + duration);
+      if (tracking) {
+        return;
+      }
+      tracking = true;
+      const tick = () => {
+        drawWires();
+        if (performance.now() < trackUntil) {
+          requestAnimationFrame(tick);
+        } else {
+          tracking = false;
+        }
+      };
+      requestAnimationFrame(tick);
+    }
+
+    // Autoplay runs while the example is on screen, pauses under the pointer and stops for good on a click.
+    let autoplay = motion;
+    let inView = false;
+    let paused = false;
+    let timer = 0;
+    function schedule() {
+      clearTimeout(timer);
+      buttons.forEach(button => button.classList.remove('playing'));
+      if (!autoplay || !inView || paused || document.hidden) {
+        return;
+      }
+      const button = buttons[current];
+      const { dwell } = data.steps[current];
+      button.style.setProperty('--dur', `${dwell}ms`);
+      void button.offsetWidth;
+      button.classList.add('playing');
+      timer = setTimeout(() => {
+        apply((current + 1) % data.steps.length, true);
+        schedule();
+      }, dwell);
+    }
+
+    buttons.forEach(button => {
+      button.addEventListener('click', () => {
+        autoplay = false;
+        apply(Number(button.dataset.step), motion);
+        live.textContent = data.steps[current].say;
+        schedule();
+      });
+    });
+    for (const key of Object.keys(data.notes)) {
+      rows.get(key).addEventListener('pointerenter', () => {
+        hovered = key;
+        placePop();
+      });
+      rows.get(key).addEventListener('pointerleave', () => {
+        hovered = null;
+        placePop();
+      });
+    }
+    panes.addEventListener('pointerenter', () => {
+      paused = true;
+      schedule();
+    });
+    panes.addEventListener('pointerleave', () => {
+      paused = false;
+      schedule();
+    });
+    document.addEventListener('visibilitychange', schedule);
+    new IntersectionObserver(entries => {
+      inView = entries.some(entry => entry.isIntersecting);
+      schedule();
+    }, { threshold: 0.35 }).observe(panes);
+    new ResizeObserver(() => {
+      placePop();
+      drawWires();
+    }).observe(panes);
+
+    apply(0, false);
+    document.fonts.ready.then(() => {
+      placePop();
+      trackWires(300);
+    });
+  }
+</script>

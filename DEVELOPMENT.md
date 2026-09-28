@@ -59,6 +59,7 @@ media/           Syntax highlighting for .comment files; the extension icon and 
 examples/        A small annotated file to try the extension on.
 test/            Tests; test/fixtures holds a golden .comment file.
 scripts/         Test runners, packaging, benchmark, cleanup.
+site/            The website (Astro). Built from the example and the extension's own code.
 dist/, reports/  Generated. Ignored by Git.
 ```
 
@@ -134,6 +135,19 @@ Rebuilding from an extracted source ZIP produces identical archives.
 These are single-process micro-benchmarks, not editor latency. Compare only runs from the same machine.
 
 Known cost: creating a note splits the whole file, so saving many comments in a large file is O(notes × lines).
+
+## Website
+
+`site/` is a separate Astro project with its own `package.json`; the extension itself stays dependency-free.
+
+```sh
+cd site
+npm install
+npm run build    # writes site/dist/
+npm run dev      # local preview with reload
+```
+
+The page imports `src/core` and `src/node` at build time, so the demo's hashes, states and CLI output are what the extension produces for `examples/app.tsx`. The build fails if the demo no longer matches the example. Fonts are self-hosted and preloaded, and the demo only animates transforms, clipping and opacity, so the page has no layout shift.
 
 ## References
 

@@ -1,0 +1,295 @@
+---
+import '../styles/site.css';
+import Demo from '../components/Demo.astro';
+import Window from '../components/Window.astro';
+import { anatomy, extension, read, terminal } from '../lib/example.js';
+import { marker, ring, segments } from '../lib/markup.js';
+import geist from '../assets/fonts/Geist-Variable.woff2?url';
+import geistMono from '../assets/fonts/GeistMono-Variable.woff2?url';
+import instrumentSerif from '../assets/fonts/InstrumentSerif-Italic.woff2?url';
+import logo from '../assets/logo.svg?url';
+import favicon from '../assets/favicon-32.png?url';
+import touchIcon from '../assets/apple-touch-icon.png?url';
+
+const { version, id, repository: REPOSITORY } = extension;
+const MARKETPLACE = `https://marketplace.visualstudio.com/items?itemName=${id}`;
+const INSTALL = `code --install-extension ${id}`;
+const DESCRIPTION = 'Explain a line of code without touching the code. Comments live in a .comment file beside your source, follow their line as the code moves, and can be read by AI agents.';
+const ANATOMY_PARTS = [1, 1, 1, 2, 3, 4];
+const LEGEND = [
+  ['Header', 'Format version and file names.'],
+  ['Which line', 'The line number, a stable ID and the state.'],
+  ['Fingerprints', 'Hashes of the line and its neighbors. Never a copy of your code.'],
+  ['Your comment', 'Plain text. Multi-line comments work too.'],
+];
+const STATES = [
+  ['Attached', 'The line is where it was.', marker()],
+  ['Moved', 'Code was added or removed above it, and it followed.', marker()],
+  ['Needs review', 'The line itself was edited, or only the line still matches.', marker({ review: true })],
+  ['Ambiguous', "Several lines match, so it won't pick one.", null],
+  ['Detached', 'The line was deleted, split or rewritten.', null],
+];
+const TOOLS = [
+  ['comment_sidecar_read', 'Source and comments together'],
+  ['comment_sidecar_check', 'Comments that need attention'],
+  ['comment_sidecar_write', 'Opt-in. Edits .comment files only'],
+];
+const FAQ = [
+  ['Does it ever change my source files?', 'No. Only <code>.comment</code> files are written. A sidecar that can’t be read is reported as an error; it is never treated as empty or overwritten.'],
+  ['Should I commit <code>.comment</code> files?', 'Yes. They belong with the code they describe, so they travel through branches and code review like everything else.'],
+  ['Can a comment span several lines?', 'A comment attaches to one line: the line that enforces the rule. Its text can run over as many lines as you need, and one line can hold several comments.'],
+  ['Which languages does it support?', 'Any UTF-8 text file. Comments attach to physical lines, so there’s no parser or language server involved.'],
+  ['Does anything leave my machine?', 'No. There is no network access, telemetry or model call. An agent you connect may send tool output to its model; that part is up to the agent.'],
+];
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Comment Sidecar</title>
+    <meta name="description" content={DESCRIPTION} />
+    <meta name="theme-color" content="#070B15" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Comment Sidecar" />
+    <meta property="og:description" content={DESCRIPTION} />
+    <link rel="icon" href={favicon} sizes="32x32" type="image/png" />
+    <link rel="icon" href={logo} type="image/svg+xml" />
+    <link rel="apple-touch-icon" href={touchIcon} />
+    <link rel="preload" href={geist} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={geistMono} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={instrumentSerif} as="font" type="font/woff2" crossorigin />
+  </head>
+  <body>
+    <header class="top" id="top">
+      <a class="brand" href="#top"><img src={logo} width="28" height="28" alt="" />Comment Sidecar</a>
+      <nav class="nav" aria-label="Page">
+        <a class="wide-only" href="#how">How it works</a>
+        <a class="wide-only" href="#agents">Agents</a>
+        <a class="wide-only" href="#faq">FAQ</a>
+        <a href={REPOSITORY}>GitHub</a>
+        <a class="nav-install" href="#install">Install</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="eyebrow"><span class="version">v{version}</span><span>VS Code · Cursor · CLI · MCP</span></p>
+        <h1>Explain a line of code without <em>touching</em> the code.</h1>
+        <p class="lede">Comments live in a <code>.comment</code> file beside your source. They show up on the line in your editor, follow it as the code moves, and can be read by AI agents.</p>
+        <div class="actions">
+          <a class="button" href={MARKETPLACE}>Install for VS Code</a>
+          <div class="command"><span class="prompt" aria-hidden="true">$</span><code id="install-hero">{INSTALL}</code><button type="button" class="copy" data-copy="install-hero">Copy</button></div>
+        </div>
+      </section>
+
+      <Demo />
+
+      <section class="section" id="how">
+        <div class="copy-text">
+          <p class="remark">// how it works</p>
+          <h2>Your source stays <em>clean</em>.</h2>
+          <p>Every source file can have one sidecar: <code>app.tsx</code> gets <code>app.tsx.comment</code>. It holds each comment’s line number and fingerprints, never your code, so the source and its diffs stay exactly as they were.</p>
+          <p>The sidecar sits under its file in the Explorer. Commit it with your code: it’s plain text, so it goes through branches and code review like everything else.</p>
+          <div class="win explorer" role="img" aria-label="Explorer showing app.tsx.comment nested under app.tsx">
+            <div class="explorer-title">EXPLORER</div>
+            <ul>
+              <li><span class="chevron open"></span>src</li>
+              <li style="--depth: 1"><span class="chevron open"></span><span class="file-icon">TSX</span>app.tsx</li>
+              <li class="nested" style="--depth: 2"><span class="chevron"></span><span class="file-icon cm">◌</span>app.tsx.comment</li>
+              <li style="--depth: 1"><span class="chevron closed"></span><span class="file-icon">TSX</span>main.tsx</li>
+              <li style="--depth: 1"><span class="chevron"></span><span class="file-icon ts">TS</span>session.ts</li>
+              <li><span class="chevron"></span><span class="file-icon json">{'{}'}</span>package.json</li>
+            </ul>
+          </div>
+        </div>
+        <div class="stack">
+          <Window tab="app.tsx.comment" badge="◌">
+            <div class="scroll">
+              <div class="anatomy">
+                {anatomy.map((line, index) => (
+                  <div class="anatomy-line" data-part={ANATOMY_PARTS[index]}><span class="gutter">{index !== 0 && index !== 2 && <span class="badge">{ANATOMY_PARTS[index]}</span>}</span><Fragment set:html={segments(line.parts, 'c-')} /></div>
+                ))}
+              </div>
+            </div>
+          </Window>
+          <ol class="legend">
+            {LEGEND.map(([title, text], index) => (
+              <li data-part={index + 1} tabindex="0"><span class="badge">{index + 1}</span><div><strong>{title}</strong>{text}</div></li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section class="section" id="tracking">
+        <div class="copy-text">
+          <p class="remark">// tracking</p>
+          <h2>Comments <em>keep up</em>.</h2>
+          <p>When the source changes, the fingerprints decide where each comment belongs now. A comment that can’t be placed with confidence tells you so instead of guessing.</p>
+          <p class="small">Fix a flagged comment with <strong>Mark Comment Reviewed</strong> or <strong>Reattach Comment to This Line</strong>. Renaming a file in the editor renames its sidecar too.</p>
+        </div>
+        <table class="states">
+          <caption class="sr">Comment states</caption>
+          <tbody>
+            {STATES.map(([name, text, mark]) => (
+              <tr class:list={{ warn: name === 'Needs review', quiet: !mark }}>
+                <th scope="row">{name}</th>
+                <td>{text}</td>
+                <td class="state-marker">{mark ? <Fragment set:html={mark} /> : 'warning, no marker'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section class="section" id="agents">
+        <div class="copy-text">
+          <p class="remark">// for agents</p>
+          <h2>Readable by <em>agents</em>.</h2>
+          <p>Agents don’t see editor decorations. The CLI and the MCP server give them the code and its comments in one read, with the original line numbers.</p>
+          <dl class="setup">
+            <div><dt>Instructions</dt><dd>Run <strong>Copy Agent Instructions</strong> and paste the result into <code>AGENTS.md</code> or a Cursor rule.</dd></div>
+            <div><dt>MCP server</dt><dd>Run <strong>Copy Cursor MCP Configuration</strong> and merge it into <code>.cursor/mcp.json</code>.</dd></div>
+          </dl>
+          <p class="small">Comment text reaches the agent as untrusted data, never as instructions. Writing is opt-in and only touches <code>.comment</code> files.</p>
+        </div>
+        <div class="stack">
+          <Window tab="Terminal">
+            <div class="terminal">
+              <div><span class="t-dir">~/app </span><span class="t-prompt">$ </span><span class="t-src">sidecar read {read.file} </span><span class="t-flag">--start</span><span class="t-src"> {read.start} </span><span class="t-flag">--end</span><span class="t-src"> {read.end}</span></div>
+              {terminal.map(parts => <div set:html={segments(parts, 't-')} />)}
+              <div><span class="t-dir">~/app </span><span class="t-prompt">$ </span><span class="caret" aria-hidden="true"></span></div>
+            </div>
+          </Window>
+          <ul class="tools" aria-label="MCP tools">
+            {TOOLS.map(([name, text], index) => (
+              <li class:list={{ 'opt-in': index === TOOLS.length - 1 }}><Fragment set:html={ring(18)} /><code>{name}</code><span>{text}</span></li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section class="section" id="install">
+        <div class="copy-text">
+          <p class="remark">// install</p>
+          <h2>Try it on <em>your</em> code.</h2>
+          <p>Free and MIT licensed. Works in VS Code 1.85 or later, Cursor and other editors built on VS Code. Nothing leaves your machine.</p>
+        </div>
+        <figure class="win">
+          <div class="tabs" role="tablist" aria-label="Install options">
+            <button type="button" class="tab-button" role="tab" id="tab-vscode" aria-controls="panel-vscode" aria-selected="true">VS Code</button>
+            <button type="button" class="tab-button" role="tab" id="tab-cursor" aria-controls="panel-cursor" aria-selected="false" tabindex="-1">Cursor</button>
+            <button type="button" class="tab-button" role="tab" id="tab-mcp" aria-controls="panel-mcp" aria-selected="false" tabindex="-1">MCP</button>
+          </div>
+          <div class="panel" role="tabpanel" id="panel-vscode" aria-labelledby="tab-vscode">
+            <div class="command"><span class="prompt" aria-hidden="true">$</span><code id="install-panel">{INSTALL}</code><button type="button" class="copy" data-copy="install-panel">Copy</button></div>
+            <p>Or install <a href={MARKETPLACE}>Comment Sidecar from the Marketplace</a>. Then put the cursor on a line and press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>;</kbd> (<kbd>Cmd</kbd> <kbd>Alt</kbd> <kbd>;</kbd> on macOS).</p>
+          </div>
+          <div class="panel" role="tabpanel" id="panel-cursor" aria-labelledby="tab-cursor" hidden>
+            <ol>
+              <li>Open <a href={MARKETPLACE}>the Marketplace page</a> and choose <strong>Download Extension</strong>.</li>
+              <li>In Cursor, open Extensions, choose <strong>⋯ → Install from VSIX</strong> and pick the file.</li>
+              <li>Put the cursor on a line and press <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>;</kbd>.</li>
+            </ol>
+          </div>
+          <div class="panel" role="tabpanel" id="panel-mcp" aria-labelledby="tab-mcp" hidden>
+            <pre class="json"><span class="j-p">{'{'}</span>
+  <span class="j-k">"mcpServers"</span><span class="j-p">: {'{'}</span>
+    <span class="j-k">"comment-sidecar"</span><span class="j-p">: {'{'}</span>
+      <span class="j-k">"type"</span><span class="j-p">:</span> <span class="j-s">"stdio"</span><span class="j-p">,</span>
+      <span class="j-k">"command"</span><span class="j-p">:</span> <span class="j-s">"node"</span><span class="j-p">,</span>
+      <span class="j-k">"args"</span><span class="j-p">: [</span>
+        <span class="j-s">"~/.cursor/extensions/{id}-{version}/src/mcp.js"</span><span class="j-p">,</span>
+        <span class="j-s">"--root"</span><span class="j-p">,</span> <span class="j-s">"/path/to/your/repo"</span>
+      <span class="j-p">]</span>
+    <span class="j-p">{'}'}</span>
+  <span class="j-p">{'}'}</span>
+<span class="j-p">{'}'}</span></pre>
+            <p>Run <strong>Copy Cursor MCP Configuration</strong> to get this with your real paths filled in. Choose read and write to add <code>--allow-write</code>. Copy it again after an update.</p>
+          </div>
+        </figure>
+      </section>
+
+      <section class="section" id="faq">
+        <div class="copy-text">
+          <p class="remark">// questions</p>
+          <h2>Good to <em>know</em>.</h2>
+        </div>
+        <dl class="faq">
+          {FAQ.map(([question, answer]) => (
+            <div><dt set:html={question} /><dd set:html={answer} /></div>
+          ))}
+        </dl>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="signoff">
+        <img src={logo} width="84" height="84" alt="" />
+        <p class="wordmark" role="img" aria-label="Comment Sidecar">C<span class="o" set:html={ring()} />mment Sidecar</p>
+      </div>
+      <p class="tagline">Comments next to code, not inside it.</p>
+      <nav class="fine" aria-label="Links">
+        <span>MIT License · v{version}</span>
+        <a href={MARKETPLACE}>Marketplace</a>
+        <a href={REPOSITORY}>GitHub</a>
+        <a href={`${REPOSITORY}/blob/main/FORMAT.md`}>File format</a>
+        <a href={`${REPOSITORY}/blob/main/SECURITY.md`}>Security</a>
+      </nav>
+    </footer>
+
+    <script>
+      // Copy buttons fall back to selecting the text where the clipboard is unavailable.
+      document.querySelectorAll('[data-copy]').forEach(button => {
+        button.addEventListener('click', () => {
+          const source = document.getElementById(button.dataset.copy);
+          const settle = label => {
+            button.textContent = label;
+            setTimeout(() => {
+              button.textContent = 'Copy';
+            }, 1800);
+          };
+          const select = () => {
+            getSelection().selectAllChildren(source);
+            settle('Selected');
+          };
+          const copying = navigator.clipboard ? navigator.clipboard.writeText(source.textContent) : Promise.reject();
+          copying.then(() => settle('Copied'), select);
+        });
+      });
+
+      // Install tabs, with arrow-key navigation.
+      const tabs = [...document.querySelectorAll('.tab-button')];
+      function selectTab(tab) {
+        for (const other of tabs) {
+          const selected = other === tab;
+          other.setAttribute('aria-selected', String(selected));
+          other.tabIndex = selected ? 0 : -1;
+          document.getElementById(other.getAttribute('aria-controls')).hidden = !selected;
+        }
+      }
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => selectTab(tab));
+        tab.addEventListener('keydown', event => {
+          const step = { ArrowRight: 1, ArrowLeft: -1 }[event.key];
+          if (step) {
+            event.preventDefault();
+            const target = tabs[(index + step + tabs.length) % tabs.length];
+            selectTab(target);
+            target.focus();
+          }
+        });
+      });
+
+      // Pointing at a legend entry highlights its lines in the .comment file.
+      document.querySelectorAll('.legend li').forEach(item => {
+        const lines = document.querySelectorAll(`.anatomy-line[data-part="${item.dataset.part}"]`);
+        const light = on => lines.forEach(line => line.classList.toggle('lit', on));
+        item.addEventListener('pointerenter', () => light(true));
+        item.addEventListener('pointerleave', () => light(false));
+        item.addEventListener('focus', () => light(true));
+        item.addEventListener('blur', () => light(false));
+      });
+    </script>
+  </body>
+</html>

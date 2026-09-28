@@ -1,0 +1,12 @@
+---
+// Editor window chrome: traffic lights, a tab and an optional note on the right.
+const { tab, badge, note, class: className, ...attributes } = Astro.props;
+---
+<figure class:list={['win', className]} {...attributes}>
+  <div class="bar">
+    <i></i><i></i><i></i>
+    <span class="tab">{badge && <b class:list={{ cm: badge === '◌' }}>{badge}</b>}{tab}</span>
+    {note && <span class="bar-note">{note}</span>}
+  </div>
+  <slot />
+</figure>
