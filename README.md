@@ -26,7 +26,7 @@
 
 | Your source stays clean | Comments keep up | Agents can read them |
 | --- | --- | --- |
-| Source files are never written. Notes about *why* a line exists stay out of the code and out of its diffs. | Each comment follows its line as code moves around it, and asks for a review when the line itself changes. | A CLI and an MCP server hand an agent the code and its comments in a single read. |
+| Source files are never written. Notes about *why* a line exists stay out of the code, and are reviewed as their own file. | Each comment follows its line as code moves around it, and asks for a review when the line itself changes. | A CLI and an MCP server hand an agent the code and its comments in a single read. |
 
 ## Install
 
@@ -70,12 +70,14 @@ Every source file can have one sidecar: `app.tsx` → `app.tsx.comment`. For eac
 | Status | What happened | In the editor |
 | --- | --- | --- |
 | **Attached** | The line is where it was. | `◌ comment` |
-| **Moved** | Lines were added or removed above it, and it followed. | `◌ comment` |
+| **Moved** | Lines were added or removed above it, or it was moved or cut and pasted, and it followed. | `◌ comment` |
 | **Needs review** | The line itself was edited, or only the line (not its neighbors) still matches. | `◌ comment !` in amber |
 | **Ambiguous** | Several lines match, so it won't guess. | A warning, no marker |
 | **Detached** | The line was deleted, split or rewritten. | A warning, no marker |
 
 Resolve the last three with **Mark Comment Reviewed** or **Reattach Comment to This Line**. *Attached* means the position still matches, not that the note is still true.
+
+A `.comment` file changes only when a comment, or the code right around it, changes. Edits elsewhere in the file leave it untouched, so its diff stays small.
 
 Renaming a file in the editor renames its `.comment` file too. Renames made outside the editor aren't tracked; **Check Workspace** reports the orphaned sidecar. The file format is specified in [FORMAT.md](FORMAT.md).
 
@@ -183,7 +185,7 @@ Save the source file first, and its `.comment` file if it's open. A draft is ref
 <summary><strong>Should I commit <code>.comment</code> files?</strong></summary>
 <br>
 
-Yes. They're plain text and belong with the code they describe, so they travel through branches and code review like everything else.
+Yes. They're plain text and belong with the code they describe, so they travel through branches and code review like everything else. A pull request shows comment changes as the `.comment` file's own diff.
 
 </details>
 

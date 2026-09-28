@@ -8,7 +8,7 @@ const manifest = require('./package.json');
 const { createNote } = require('./src/core/note.js');
 const { serialize } = require('./src/core/format.js');
 const { lineOffsets } = require('./src/core/text.js');
-const { resolveNotes, rebaseNotes } = require('./src/core/anchors.js');
+const { resolveNotes, settleNotes } = require('./src/core/anchors.js');
 const { applyChanges, trackEdits } = require('./src/core/edits.js');
 const service = require('./src/node/service.js');
 
@@ -93,7 +93,7 @@ const expanded = rows.map(row => row.key);
 // Applies one editor change and saves, the way the extension does on Ctrl+S.
 function save(state, change) {
   const source = applyChanges(state.source, [change]);
-  const notes = rebaseNotes(source, trackEdits(state.source, source, state.results, [change]));
+  const notes = settleNotes(source, trackEdits(state.source, source, state.results, [change]));
   return { source, notes, results: resolveNotes(source, notes) };
 }
 // Mark Comment Reviewed: the comment is placed again where it is now, as attached.

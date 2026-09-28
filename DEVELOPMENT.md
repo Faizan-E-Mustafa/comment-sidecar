@@ -74,6 +74,7 @@ Each rule has tests. Keep them passing.
 - **Writes are serialized and atomic.** `withLock` takes `<source>.comment.lock`; `atomicWrite` re-checks the sidecar hash and renames a temp file into place.
 - **Unreadable sidecars are never overwritten.** A parse error stops every operation. It is never treated as "no comments".
 - **Only three states are saved:** `attached`, `review`, `detached`. `moved` and `ambiguous` are computed on read.
+- **Saves only write what changed.** A comment's block is rewritten only when it no longer finds its line on its own (`settleNotes`), so edits elsewhere leave the `.comment` file and its diff alone.
 - **No guessing.** Several matching lines give `ambiguous`; the resolver never picks the nearest one.
 - **Paths stay inside the workspace.** Symlinked files and links that leave the workspace are rejected. Directory aliases (such as macOS `/var` → `/private/var`) are allowed.
 - **Comment text is untrusted.** Hovers use plain text with HTML and commands disabled. Agent output labels comments as data.
@@ -82,7 +83,7 @@ Each rule has tests. Keep them passing.
 ## Code style
 
 - One statement per line. Braced, multi-line `if`, loops and `try`. No nested ternaries.
-- Name real decisions (`editDetachesLine`, `isValidEdit`). Do not add wrappers just to shorten code.
+- Name real decisions (`findMoves`, `isValidEdit`). Do not add wrappers just to shorten code.
 - Comments explain a non-obvious reason. Do not narrate the code.
 - No new dependencies without a strong reason.
 
@@ -109,10 +110,11 @@ What the tests do **not** prove: real VS Code or Cursor rendering, Windows or ma
 2. Try `markerStyle` `icon` / `off` / `label`, `showMarkers: false`, `highlightStyle` `underline` / `off`, and `showHoverMetadata: true`. Other hovers (TypeScript, other extensions) still appear.
 3. Add, edit and delete a multi-line comment. The source file does not change.
 4. Insert lines above a comment, edit its line, delete its line, undo, save, reopen. Expect moved, review, detached, then back.
-5. Change the first line of a `.comment` file to `# comment-sidecar v1`. Expect an error in the **Comment Sidecar** output, no markers, and the file unchanged after saving the source.
-6. With the source or sidecar unsaved, try to save a draft. It fails without overwriting.
-7. Rename a source file in the Explorer. Its `.comment` file follows.
-8. Point an agent at the CLI or MCP server and check it reads comments with the source.
+5. Move a commented line with Alt+Up and Alt+Down, then cut it and paste it elsewhere, saving in between. The comment follows each time. Edit a line far from any comment and save: `git diff` shows no change to the `.comment` file.
+6. Change the first line of a `.comment` file to `# comment-sidecar v1`. Expect an error in the **Comment Sidecar** output, no markers, and the file unchanged after saving the source.
+7. With the source or sidecar unsaved, try to save a draft. It fails without overwriting.
+8. Rename a source file in the Explorer. Its `.comment` file follows.
+9. Point an agent at the CLI or MCP server and check it reads comments with the source.
 
 ## Release
 

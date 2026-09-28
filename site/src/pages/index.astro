@@ -28,7 +28,7 @@ const LEGEND = [
 ];
 const STATES = [
   ['Attached', 'The line is where it was.', marker()],
-  ['Moved', 'Code was added or removed above it, and it followed.', marker()],
+  ['Moved', 'Code was added or removed above it, or it was moved or cut and pasted, and it followed.', marker()],
   ['Needs review', 'The line itself was edited, or only the line still matches.', marker({ review: true })],
   ['Ambiguous', "Several lines match, so it won't pick one.", null],
   ['Detached', 'The line was deleted, split or rewritten.', null],
@@ -40,7 +40,7 @@ const TOOLS = [
 ];
 const FAQ = [
   ['Does it ever change my source files?', 'No. Only <code>.comment</code> files are written. A sidecar that can’t be read is reported as an error; it is never treated as empty or overwritten.'],
-  ['Should I commit <code>.comment</code> files?', 'Yes. They belong with the code they describe, so they travel through branches and code review like everything else.'],
+  ['Should I commit <code>.comment</code> files?', 'Yes. They belong with the code they describe, so they travel through branches and code review like everything else. A <code>.comment</code> file changes only when a comment or the code right around it changes, so edits elsewhere leave it alone.'],
   ['Can a comment span several lines?', 'A comment attaches to one line: the line that enforces the rule. Its text can run over as many lines as you need, and one line can hold several comments.'],
   ['Which languages does it support?', 'Any UTF-8 text file. Comments attach to physical lines, so there’s no parser or language server involved.'],
   ['Does anything leave my machine?', 'No. There is no network access, telemetry or model call. An agent you connect may send tool output to its model; that part is up to the agent.'],

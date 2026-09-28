@@ -444,11 +444,12 @@ test('hover returns comment as escaped text, never trusted HTML or commands', as
   assert.equal(noHover, undefined);
 });
 
-test('store tracks insertion, persists coordinates on save, and does not edit source itself', async t => {
+test('store tracks an insertion above a comment, and saving leaves the .comment file and source alone', async t => {
   const { root, document, api } = await setup(t);
   const uri = api.drafts.create(await service.load(root, 'app.ts'), 2);
   await api.drafts.writeFile(uri, Buffer.from('Wait.'));
   await api.store.get(document);
+  const sidecar = await fs.readFile(path.join(root, 'app.ts.comment'), 'utf8');
 
   document.text = '\n' + document.text;
   document.version++;
@@ -461,8 +462,52 @@ test('store tracks insertion, persists coordinates on save, and does not edit so
   document.isDirty = false;
   await api.store.saved(document);
 
+  assert.equal(await fs.readFile(path.join(root, 'app.ts.comment'), 'utf8'), sidecar);
+  assert.equal(await fs.readFile(path.join(root, 'app.ts'), 'utf8'), document.text);
   const snapshot = await service.load(root, 'app.ts');
-  assert.equal(snapshot.notes[0].line, 3);
+  assert.deepEqual([snapshot.results[0].line, snapshot.results[0].status], [3, 'moved']);
+});
+
+test('a comment cut with its line follows the paste, even when the file is saved in between', async t => {
+  const { root, document, api } = await setup(t);
+  await addDraft(api, root);
+  await api.store.get(document);
+  const line = 'if (!ready) wait();\n';
+  const start = document.text.indexOf(line);
+
+  document.text = document.text.slice(0, start) + document.text.slice(start + line.length);
+  document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: start, rangeLength: line.length, text: '' }] });
+  await fs.writeFile(document.uri.fsPath, document.text);
+  await api.store.saved(document);
+  assert.equal((await service.load(root, 'app.ts')).results[0].status, 'detached');
+
+  const end = document.text.length;
+  document.text += line;
+  document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: end, rangeLength: 0, text: line }] });
+  await fs.writeFile(document.uri.fsPath, document.text);
+  await api.store.saved(document);
+
+  const result = (await service.load(root, 'app.ts')).results[0];
+  assert.deepEqual([result.line, result.status], [3, 'attached']);
+});
+
+test('saving writes a comment again once its line is edited', async t => {
+  const { root, document, api } = await setup(t);
+  const uri = api.drafts.create(await service.load(root, 'app.ts'), 2);
+  await api.drafts.writeFile(uri, Buffer.from('Wait.'));
+  await api.store.get(document);
+
+  const end = document.text.indexOf('wait();') + 'wait();'.length;
+  document.text = `${document.text.slice(0, end)} // soon${document.text.slice(end)}`;
+  document.version++;
+  api.store.changed({ document, contentChanges: [{ rangeOffset: end, rangeLength: 0, text: ' // soon' }] });
+  await fs.writeFile(path.join(root, 'app.ts'), document.text);
+  await api.store.saved(document);
+
+  const snapshot = await service.load(root, 'app.ts');
+  assert.deepEqual([snapshot.notes[0].line, snapshot.notes[0].state], [2, 'review']);
   assert.equal(snapshot.notes[0].base, sourceHash(document.text));
 });
 
@@ -652,9 +697,10 @@ test('dirty aliased sidecar blocks both draft edits and automatic tracked writes
   await assert.rejects(() => api.drafts.writeFile(uri, Buffer.from('Updated reason.')), /Save the source/);
 
   await api.store.get(document);
-  document.text = '\n' + document.text;
+  const end = document.text.indexOf('wait();') + 'wait();'.length;
+  document.text = `${document.text.slice(0, end)} // soon${document.text.slice(end)}`;
   document.version++;
-  api.store.changed({ document, contentChanges: [{ rangeOffset: 0, rangeLength: 0, text: '\n' }] });
+  api.store.changed({ document, contentChanges: [{ rangeOffset: end, rangeLength: 0, text: ' // soon' }] });
   await fs.writeFile(document.uri.fsPath, document.text);
   await api.store.saved(document);
 
@@ -663,7 +709,7 @@ test('dirty aliased sidecar blocks both draft edits and automatic tracked writes
 
   sidecar.isDirty = false;
   await api.store.saved(document);
-  assert.equal((await service.load(root, 'app.ts')).notes[0].line, 3);
+  assert.equal((await service.load(root, 'app.ts')).notes[0].state, 'review');
 });
 
 test('canonical sidecar watcher event invalidates an aliased editor cache', async t => {

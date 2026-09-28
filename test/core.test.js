@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const { serialize, parse } = require('../src/core/format');
 const { createNote } = require('../src/core/note');
 const { sourceHash } = require('../src/core/text');
-const { resolveNotes, rebaseNotes } = require('../src/core/anchors');
+const { resolveNotes, rebaseNotes, settleNotes } = require('../src/core/anchors');
 const { render } = require('../src/core/render');
 const { trackEdits, applyChanges } = require('../src/core/edits');
 const SOURCE = ['function App() {', '  const ready = session.ready;', '  if (!ready) return null;', '  return render();', '}', ''].join('\n');
@@ -178,6 +178,84 @@ test('UTF-16 offsets including emoji are handled', () => {
 
 test('rejects mismatched editor event snapshots', () => {
   assert.throws(() => trackEdits(SOURCE, 'unrelated', resolveNotes(SOURCE, [note()]), []), /match/);
+});
+
+// Offsets of a SOURCE line: [start, end before its line break].
+function span(line) {
+  const start = SOURCE.split('\n').slice(0, line - 1).join('\n').length + (line > 1 ? 1 : 0);
+  return [start, start + SOURCE.split('\n')[line - 1].length];
+}
+function track(results, changes, source = SOURCE) {
+  return trackEdits(source, applyChanges(source, changes), results, changes);
+}
+
+test('Move Line Down and Move Line Up keep the comments on both swapped lines', () => {
+  const notes = [note(), createNote(SOURCE, 4, 'Render last.'), createNote(SOURCE, 2, 'Read once.')];
+  const initial = resolveNotes(SOURCE, notes);
+  const lines = SOURCE.split('\n');
+
+  // The changes VS Code sends for Alt+Down and Alt+Up on line 3.
+  const down = track(initial, [
+    { rangeOffset: span(3)[1], rangeLength: span(4)[1] - span(3)[1], text: '' },
+    { rangeOffset: span(3)[0], rangeLength: 0, text: `${lines[3]}\n` },
+  ]);
+  assert.deepEqual(down.map(result => [result.line, result.status]), [[4, 'moved'], [3, 'moved'], [2, 'attached']]);
+
+  const up = track(initial, [
+    { rangeOffset: span(3)[1], rangeLength: 0, text: `\n${lines[1]}` },
+    { rangeOffset: span(2)[0], rangeLength: span(3)[0] - span(2)[0], text: '' },
+  ]);
+  assert.deepEqual(up.map(result => [result.line, result.status]), [[2, 'moved'], [4, 'attached'], [3, 'moved']]);
+});
+
+test('Move Line Down on an empty line, sent as a deletion and an insertion at the same offset', () => {
+  const source = 'first\n\nsecond\nthird\n';
+  const changes = [
+    { rangeOffset: 6, rangeLength: '\nsecond'.length, text: '' },
+    { rangeOffset: 6, rangeLength: 0, text: 'second\n' },
+  ];
+  assert.equal(applyChanges(source, changes), 'first\nsecond\n\nthird\n');
+  const result = track(resolveNotes(source, [createNote(source, 3, 'Second.')]), changes, source)[0];
+  assert.deepEqual([result.line, result.status], [2, 'moved']);
+});
+
+test('a comment on a cut line comes back when the line is pasted in a later change', () => {
+  const line = SOURCE.split('\n')[2];
+  const cut = track(resolveNotes(SOURCE, [note()]), [{ rangeOffset: span(3)[0], rangeLength: line.length + 1, text: '' }]);
+  assert.equal(cut[0].status, 'detached');
+
+  const without = SOURCE.replace(`${line}\n`, '');
+  const pasted = track(cut, [{ rangeOffset: 0, rangeLength: 0, text: `${line}\n` }], without);
+  assert.deepEqual([pasted[0].line, pasted[0].status, pasted[0].note.state], [1, 'moved', 'attached']);
+});
+
+test('a whole line replaced in place, as VS Code does when the file changes on disk, asks for review', () => {
+  const changes = [{ rangeOffset: span(3)[0], rangeLength: span(4)[0] - span(3)[0], text: '  if (!ready) return undefined;\n' }];
+  const result = track(resolveNotes(SOURCE, [note()]), changes)[0];
+  assert.deepEqual([result.line, result.status], [3, 'review']);
+});
+
+test('Copy Line Down keeps the comment on the upper line', () => {
+  const changes = [{ rangeOffset: span(3)[0], rangeLength: 0, text: `${SOURCE.split('\n')[2]}\n` }];
+  const result = track(resolveNotes(SOURCE, [note(), createNote(SOURCE, 4, 'Render last.')]), changes);
+  assert.deepEqual(result.map(item => [item.line, item.status]), [[3, 'attached'], [5, 'moved']]);
+});
+
+test('saving keeps entries that still find their line and rewrites the rest', () => {
+  const notes = [createNote(SOURCE, 2, 'Read once.'), createNote(SOURCE, 4, 'Render last.')];
+  const initial = resolveNotes(SOURCE, notes);
+
+  // A line inserted above both: they still find their lines, so nothing is written.
+  const inserted = [{ rangeOffset: 0, rangeLength: 0, text: '// header\n' }];
+  const moved = applyChanges(SOURCE, inserted);
+  const kept = settleNotes(moved, trackEdits(SOURCE, moved, initial, inserted));
+  assert.deepEqual(kept, notes);
+  assert.deepEqual(resolveNotes(moved, kept).map(result => [result.line, result.status]), [[3, 'moved'], [5, 'moved']]);
+
+  // Editing the second comment's line rewrites it, and the first one's line number is brought up to date with it.
+  const edited = [{ rangeOffset: moved.indexOf('render()'), rangeLength: 0, text: 'await ' }];
+  const settled = settleNotes(applyChanges(moved, edited), trackEdits(moved, applyChanges(moved, edited), resolveNotes(moved, kept), edited));
+  assert.deepEqual(settled.map(item => [item.line, item.state]), [[3, 'attached'], [5, 'review']]);
 });
 
 test('combined read preserves original numbers and emits no raw patch hashes per note', () => {

@@ -12,6 +12,16 @@ function setResults(entry, results) {
   entry.results = results;
   entry.byLine = indexResults(results);
 }
+// A comment detached by a cut stays ready to follow the paste, even if the file is saved in between.
+function keepRemoved(previous, results) {
+  const removed = new Map(previous.filter(result => result.removed).map(result => [result.note.id, result.removed]));
+  return results.map(result => {
+    if (result.line !== null || !removed.has(result.note.id)) {
+      return result;
+    }
+    return { ...result, removed: removed.get(result.note.id) };
+  });
+}
 
 class Store {
   constructor(onUpdate, onError) {
@@ -118,12 +128,13 @@ class Store {
 
       const source = entry.source;
       const version = entry.version;
-      await saveTracked(entry.snapshot, source, entry.results);
+      const tracked = entry.results;
+      await saveTracked(entry.snapshot, source, tracked);
       const snapshot = await load(entry.snapshot.root, entry.snapshot.sourcePath);
       entry.snapshot = snapshot;
       if (entry.version === version) {
         const unchanged = source === snapshot.source;
-        setResults(entry, unchanged ? snapshot.results : resolveNotes(source, snapshot.notes));
+        setResults(entry, keepRemoved(tracked, unchanged ? snapshot.results : resolveNotes(source, snapshot.notes)));
       }
       this.onUpdate(document.uri);
     } catch (error) {

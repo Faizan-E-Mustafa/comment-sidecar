@@ -36,13 +36,13 @@ The names in the header are informational. The tool always finds the source by t
 
 | Line | Content |
 | --- | --- |
-| `@@ <line> @@ id=<id> base=<sha256> state=<state>` | Where the comment was last attached. |
+| `@@ <line> @@ id=<id> base=<sha256> state=<state>` | Where the comment was attached when this block was written. |
 | `@anchor sha256 before=<0-2> after=<0-2> strong=<0 or 1> target=<sha256> context=<sha256>` | The line's fingerprint. |
 | `+// <text>` | One line of comment text. Repeat for multi-line comments. Empty lines are `+// `. |
 
 Rules:
 
-- `<line>` is the 1-based line number in the source. It is not a diff offset.
+- `<line>` is the 1-based line number in the source when the block was written. It is not a diff offset. Tools find the comment by its fingerprint, so the number can fall behind as code moves above it (see [When blocks are written](#when-blocks-are-written)).
 - `<id>` matches `sc_[a-zA-Z0-9_-]{1,64}` and is unique in the file. IDs written before 1.1.0 start with `lc_` and are still valid. It never changes, even when the comment is edited or reattached.
 - `<state>` is `attached`, `review` or `detached`.
 - Field order is fixed.
@@ -80,11 +80,17 @@ When the source changes, the tool hashes every current line and compares:
 5. **Only the target line matches, in exactly one place, and it is strong**: `review` there.
 6. **Otherwise**: `detached`.
 
-A comment becomes `detached` when its line is deleted, split or rewritten in the editor. It stays detached until someone reattaches it, even if identical code reappears.
+In the editor, a comment becomes `detached` when its line is deleted, split or rewritten. If that line is pasted back while the file is open (a cut and paste), the comment follows it. Otherwise it stays detached until someone reattaches it, even if identical code reappears later.
 
 `moved` and `ambiguous` are computed on every read and never saved.
 
 Matching is by exact hashes only. There is no fuzzy matching, AST, symbol lookup or Git history. "Attached" means the position matched, not that the comment is still correct.
+
+## When blocks are written
+
+Saving a source file rewrites a comment's block only when the block no longer finds the comment's line on its own: the line was edited, its neighbors changed, or it would match in more than one place. Every other block is left exactly as it is, so code added, removed or edited elsewhere leaves the `.comment` file and its diff unchanged. When any block is rewritten, blocks whose comments only moved are rewritten with it, so line numbers stay in order.
+
+`sidecar sync` (and the MCP `sync` operation) rewrites every block from the current positions.
 
 ## Limits
 

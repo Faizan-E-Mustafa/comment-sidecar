@@ -3,7 +3,7 @@ const path = require('node:path');
 const { parse, serialize, FORMAT_VERSION } = require('../core/format');
 const { createNote, normalizeComment } = require('../core/note');
 const { sourceHash, hash, linesOf, assertLine } = require('../core/text');
-const { resolveNotes, rebaseNotes, NEEDS_ATTENTION } = require('../core/anchors');
+const { resolveNotes, rebaseNotes, settleNotes, NEEDS_ATTENTION } = require('../core/anchors');
 const { sourceOf } = require('../core/sidecar');
 const { render } = require('../core/render');
 const { resolveSource, readText, withLock, atomicWrite, findSidecars } = require('./workspace');
@@ -125,7 +125,7 @@ async function saveTracked(snapshot, source, results) {
       throw new Error('Source changed before tracked comments could be saved.');
     }
 
-    const raw = serialize(path.basename(snapshot.sourcePath), rebaseNotes(source, results));
+    const raw = serialize(path.basename(snapshot.sourcePath), settleNotes(source, results));
 
     if (hash((await readText(snapshot.sidecarPath, true)) ?? '') !== snapshot.sidecarHash) {
       throw new Error('Sidecar changed concurrently. Read again before syncing.');
