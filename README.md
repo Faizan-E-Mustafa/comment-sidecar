@@ -39,7 +39,7 @@ code --install-extension zainzafar90.comment-sidecar
 **Cursor and other VS Code–based editors:** build the package, then use **Extensions → … → Install from VSIX**.
 
 ```sh
-npm run release    # writes dist/comment-sidecar-0.3.0.vsix
+npm run release    # writes dist/comment-sidecar-1.0.0.vsix
 ```
 
 Building needs Node.js 18.17+ and Python 3.9+; see [DEVELOPMENT.md](DEVELOPMENT.md).
