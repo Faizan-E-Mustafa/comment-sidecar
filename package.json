@@ -2,7 +2,7 @@
   "name": "comment-sidecar",
   "displayName": "Comment Sidecar",
   "description": "Per-line comments in sibling .comment patches. Hover context, line tracking, review warnings, and agent CLI/MCP access without changing source.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "publisher": "zainzafar90",
   "license": "MIT",
   "repository": {
