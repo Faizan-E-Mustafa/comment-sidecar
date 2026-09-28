@@ -572,6 +572,9 @@ kbd {
 .fine { display: flex; flex-wrap: wrap; gap: 10px 26px; margin-top: 64px; padding-top: 22px; border-top: 1px solid var(--line); color: var(--dim); font: 400 12.5px var(--mono); }
 .fine a { color: var(--muted); text-decoration: none; }
 .fine a:hover { color: var(--ink); }
+.fine .by { margin-left: auto; }
+.fine .by a { color: var(--ink); text-underline-offset: 3px; }
+.fine .by a:hover { text-decoration: underline; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0s !important; animation-iteration-count: 1 !important; transition-duration: 0s !important; transition-delay: 0s !important; }
