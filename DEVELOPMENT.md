@@ -157,7 +157,10 @@ cd site
 npm install
 npm run build    # writes site/dist/
 npm run dev      # local preview with reload
+npm run deploy   # builds, then deploys site/dist/ to comment-sidecar.zainzafar.net
 ```
+
+`site/wrangler.jsonc` serves `dist/` as static assets on Cloudflare Workers, with `comment-sidecar.zainzafar.net` as its custom domain. Wrangler asks you to log in to Cloudflare the first time you deploy.
 
 The page imports `src/core` and `src/node` at build time, so the demo's hashes, states and CLI output are what the extension produces for `examples/app.tsx`. The build fails if the demo no longer matches the example. Fonts are self-hosted and preloaded, and the demo only animates transforms, clipping and opacity, so the page has no layout shift.
 

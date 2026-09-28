@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "comment-sidecar",
+  "compatibility_date": "2026-09-25",
+  "observability": {
+    "enabled": false
+  },
+  "assets": {
+    "directory": "dist"
+  },
+  "routes": [{ "pattern": "comment-sidecar.zainzafar.net", "custom_domain": true }]
+}
