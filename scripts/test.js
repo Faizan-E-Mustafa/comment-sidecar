@@ -15,5 +15,7 @@ const result = spawnSync(process.execPath, ['--test', ...tests], {
   cwd: root,
   stdio: 'inherit',
 });
-if (result.error) console.error(result.error.message);
+if (result.error) {
+  console.error(result.error.message);
+}
 process.exitCode = result.error || result.signal ? 1 : result.status ?? 1;

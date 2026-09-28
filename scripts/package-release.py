@@ -2,12 +2,13 @@
 """Build and cross-check matching source/VSIX archives. No network or Git required."""
 from hashlib import sha256
 from pathlib import Path
-from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+from zipfile import ZIP_DEFLATED, ZipFile
 import json
 import re
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
+from stable_zip import write_entry
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = json.loads((ROOT / 'package.json').read_text(encoding='utf-8'))
@@ -37,14 +38,7 @@ def package_source(files):
     target = DIST / f'{RELEASE}-source.zip'
     with ZipFile(target, 'w', ZIP_DEFLATED) as archive:
         for file in files:
-            # Stable timestamps make unchanged rebuilds byte-identical.
-            name = f'{RELEASE}/{file.relative_to(ROOT).as_posix()}'
-            data = file.read_bytes()
-            info = ZipInfo(name, date_time=(1980, 1, 1, 0, 0, 0))
-            info.compress_type = ZIP_DEFLATED
-            info.create_system = 3
-            info.external_attr = (0o100755 if data.startswith(b'#!') else 0o100644) << 16
-            archive.writestr(info, data)
+            write_entry(archive, f'{RELEASE}/{file.relative_to(ROOT).as_posix()}', file.read_bytes())
     return target
 
 

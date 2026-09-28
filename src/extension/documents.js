@@ -2,6 +2,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const vscode = require('vscode');
+const { sidecarOf, isSidecar } = require('../core/sidecar');
 
 async function identity(file) {
   try {
@@ -33,8 +34,7 @@ async function matchingDocuments(paths, dirtyOnly = false) {
 }
 
 async function hasDirtyDocument(paths) {
-  const documents = await matchingDocuments(paths, true);
-  return documents.some(document => document.isDirty);
+  return (await matchingDocuments(paths, true)).length > 0;
 }
 
 async function sidecarRenameEdit(files) {
@@ -42,7 +42,7 @@ async function sidecarRenameEdit(files) {
   for (const file of files) {
     const skipRename = file.oldUri.scheme !== 'file'
       || file.newUri.scheme !== 'file'
-      || file.oldUri.fsPath.endsWith('.comment');
+      || isSidecar(file.oldUri.fsPath);
     if (skipRename) {
       continue;
     }
@@ -50,8 +50,8 @@ async function sidecarRenameEdit(files) {
       continue;
     }
 
-    const oldSidecar = vscode.Uri.file(`${file.oldUri.fsPath}.comment`);
-    const newSidecar = vscode.Uri.file(`${file.newUri.fsPath}.comment`);
+    const oldSidecar = vscode.Uri.file(sidecarOf(file.oldUri.fsPath));
+    const newSidecar = vscode.Uri.file(sidecarOf(file.newUri.fsPath));
     try {
       await vscode.workspace.fs.stat(oldSidecar);
       if (files.some(item => item.oldUri.toString() === oldSidecar.toString())) {
@@ -63,4 +63,4 @@ async function sidecarRenameEdit(files) {
   return edit;
 }
 
-module.exports = { identity, matchingDocuments, hasDirtyDocument, sidecarRenameEdit };
+module.exports = { matchingDocuments, hasDirtyDocument, sidecarRenameEdit };

@@ -238,7 +238,9 @@ async function workspace(t, sidecar) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'comment-sidecar-format-'));
   t.after(() => fs.rm(root, { recursive: true, force: true }));
   await fs.writeFile(path.join(root, 'app.ts'), SOURCE);
-  if (sidecar !== undefined) await fs.writeFile(path.join(root, 'app.ts.comment'), sidecar);
+  if (sidecar !== undefined) {
+    await fs.writeFile(path.join(root, 'app.ts.comment'), sidecar);
+  }
   return root;
 }
 

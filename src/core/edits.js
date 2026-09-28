@@ -66,10 +66,11 @@ function trackEdits(oldSource, newSource, results, changes) {
         delta += edit.text.length - edit.rangeLength;
         continue;
       }
-      if (a > finish || (a === finish && edit.rangeLength > 0)) {
-        if (a === finish && edit.rangeLength > 0) {
-          detached = true;
-        }
+      if (a === finish && edit.rangeLength > 0) {
+        detached = true;
+        continue;
+      }
+      if (a > finish) {
         continue;
       }
       touched = true;

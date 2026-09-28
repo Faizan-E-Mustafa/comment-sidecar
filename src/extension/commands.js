@@ -1,8 +1,9 @@
 'use strict';
 const vscode = require('vscode');
-const fs = require('node:fs/promises');
 const { render } = require('../core/render');
+const { sidecarOf } = require('../core/sidecar');
 const service = require('../node/service');
+const { agentRules } = require('../node/rules');
 const { hasDirtyDocument } = require('./documents');
 
 function selectedLines(editor) {
@@ -31,12 +32,22 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
     }
 
     const root = vscode.workspace.getWorkspaceFolder(editor.document.uri).uri.fsPath;
-    const sidecarPath = `${editor.document.uri.fsPath}.comment`;
+    const sidecarPath = sidecarOf(editor.document.uri.fsPath);
     if (requireClean && await hasDirtyDocument([editor.document.uri.fsPath, sidecarPath])) {
       throw new Error('Save the source and sidecar before changing comments through commands.');
     }
 
     return { editor, root, entry: await store.get(editor.document) };
+  }
+
+  // Workspace-wide commands need a folder, not an open source file.
+  function workspaceRoot() {
+    const editor = vscode.window.activeTextEditor;
+    const folder = (editor && vscode.workspace.getWorkspaceFolder(editor.document.uri)) || vscode.workspace.workspaceFolders?.[0];
+    if (!folder) {
+      throw new Error('Open a folder first.');
+    }
+    return folder.uri.fsPath;
   }
 
   async function pick(entry, line, all = false) {
@@ -136,7 +147,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
   command('reanchor', () => mutate('reanchor', true));
   command('openSidecar', async () => {
     const { editor } = await current();
-    const sidecarUri = vscode.Uri.file(`${editor.document.uri.fsPath}.comment`);
+    const sidecarUri = vscode.Uri.file(sidecarOf(editor.document.uri.fsPath));
     await vscode.window.showTextDocument(await vscode.workspace.openTextDocument(sidecarUri), {
       viewColumn: vscode.ViewColumn.Beside,
     });
@@ -154,7 +165,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
     const { start, end } = selectedLines(editor);
     const text = render(entry.source, entry.results, {
       start,
-      end: Math.max(start, end),
+      end,
       file: entry.snapshot.file,
       sidecarHash: entry.snapshot.sidecarHash,
     });
@@ -178,20 +189,19 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
     await vscode.commands.executeCommand('editor.action.showHover');
   });
   command('check', async () => {
-    const { root } = await current();
+    const root = workspaceRoot();
     const report = await service.check(root);
     output.appendLine(JSON.stringify(report, null, 2));
     output.show(true);
     void vscode.window.showInformationMessage(`${report.comments} comments checked; ${report.problems} need attention.`);
   });
   command('copyRules', async () => {
-    const text = await fs.readFile(context.asAbsolutePath('integration/AGENTS.snippet.md'), 'utf8');
     const invocation = `node ${JSON.stringify(context.asAbsolutePath('src/cli.js'))}`;
-    await vscode.env.clipboard.writeText(text.replaceAll('`sidecar ', `\`${invocation} `));
+    await vscode.env.clipboard.writeText(await agentRules(invocation));
     void vscode.window.showInformationMessage('Copied agent instructions. Merge into AGENTS.md or a Cursor rule; existing files have not been changed.');
   });
   command('copyMcp', async () => {
-    const { root } = await current();
+    const root = workspaceRoot();
     const mode = await vscode.window.showQuickPick(
       ['Read-only', 'Read and write comment sidecars'],
       { placeHolder: 'MCP access: source code is never writable through these tools' },

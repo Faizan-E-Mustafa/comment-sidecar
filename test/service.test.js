@@ -5,12 +5,12 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const os = require('node:os');
 const { promisify } = require('node:util');
-const { execFile } = require('node:child_process');
+const { execFile, spawn } = require('node:child_process');
 const exec = promisify(execFile);
 const service = require('../src/node/service');
 const { resolveSource } = require('../src/node/workspace');
 const { createHandler } = require('../src/mcp');
-const { parse } = require('../src/core/format');
+const { parse, serialize } = require('../src/core/format');
 const SOURCE = 'const ready = false;\nif (!ready) wait();\nstart();\n';
 
 async function fixture(t) {
@@ -278,7 +278,6 @@ test('saved tracked comments use optimistic sidecar conflict detection', async t
 
   const external = parse(snapshot.raw);
   external.notes[0].text = 'Other author.';
-  const { serialize } = require('../src/core/format');
   await fs.writeFile(snapshot.sidecarPath, serialize('app.ts', external.notes));
 
   await assert.rejects(() => service.saveTracked(snapshot, SOURCE, snapshot.results), /concurrently/);
@@ -286,7 +285,6 @@ test('saved tracked comments use optimistic sidecar conflict detection', async t
 
 test('MCP stdio subprocess accepts newline-delimited JSON and returns no stdout logging', async t => {
   const root = await fixture(t);
-  const { spawn } = require('node:child_process');
   const child = spawn(process.execPath, [path.join(__dirname, '../src/mcp.js'), '--root', root]);
   t.after(() => child.kill());
 

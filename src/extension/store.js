@@ -2,26 +2,11 @@
 const vscode = require('vscode');
 const { load, saveTracked } = require('../node/service');
 const { sourceHash } = require('../core/text');
-const { resolveNotes } = require('../core/anchors');
+const { resolveNotes, indexResults } = require('../core/anchors');
+const { isSidecar } = require('../core/sidecar');
 const { trackEdits } = require('../core/edits');
 const { MAX_FILE_BYTES } = require('../node/workspace');
 const { hasDirtyDocument } = require('./documents');
-
-function indexResults(results) {
-  const byLine = new Map();
-  for (const result of results) {
-    if (result.line === null) {
-      continue;
-    }
-    const items = byLine.get(result.line);
-    if (items) {
-      items.push(result);
-    } else {
-      byLine.set(result.line, [result]);
-    }
-  }
-  return byLine;
-}
 
 function setResults(entry, results) {
   entry.results = results;
@@ -38,7 +23,7 @@ class Store {
   }
   supports(document) {
     return document.uri.scheme === 'file'
-      && !document.uri.fsPath.endsWith('.comment')
+      && !isSidecar(document.uri.fsPath)
       && !!vscode.workspace.getWorkspaceFolder(document.uri);
   }
   async get(document) {

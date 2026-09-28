@@ -3,6 +3,7 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 const { randomUUID } = require('node:crypto');
 const { hash } = require('../core/text');
+const { sidecarOf, isSidecar } = require('../core/sidecar');
 const MAX_FILE_BYTES = 2 * 1024 * 1024;
 const IGNORED = new Set([
   '.git',
@@ -31,11 +32,16 @@ async function resolveSource(root, file) {
   if (requested === requestedRoot || requested === canonicalRoot || outsideRequestedRoot) {
     throw new Error('File must be inside the selected workspace.');
   }
-  if (requested.endsWith('.comment') || /[\r\n\0]/.test(requested)) {
+  if (isSidecar(requested) || /[\r\n\0]/.test(requested)) {
     throw new Error('Select a source file, not a sidecar.');
   }
 
-  const lexicalRoot = inRequestedRoot ? requestedRoot : inCanonicalRoot ? canonicalRoot : null;
+  let lexicalRoot = null;
+  if (inRequestedRoot) {
+    lexicalRoot = requestedRoot;
+  } else if (inCanonicalRoot) {
+    lexicalRoot = canonicalRoot;
+  }
 
   if (lexicalRoot && path.relative(lexicalRoot, requested).split(path.sep).some(part => IGNORED.has(part))) {
     throw new Error('Generated, dependency, and VCS directories are excluded.');
@@ -75,7 +81,7 @@ async function resolveSource(root, file) {
   return {
     root: canonicalRoot,
     sourcePath: real,
-    sidecarPath: `${real}.comment`,
+    sidecarPath: sidecarOf(real),
     file: path.relative(canonicalRoot, real).split(path.sep).join('/'),
   };
 }
@@ -174,7 +180,7 @@ async function findSidecars(root, limit = 5000) {
       if (entry.isDirectory()) {
         pending.push(file);
       }
-      if (!entry.isFile() || !entry.name.endsWith('.comment')) {
+      if (!entry.isFile() || !isSidecar(entry.name)) {
         continue;
       }
       if (result.length >= limit) {
@@ -187,4 +193,4 @@ async function findSidecars(root, limit = 5000) {
 
   return result.sort();
 }
-module.exports = { resolveSource, readText, withLock, atomicWrite, findSidecars, inside, MAX_FILE_BYTES };
+module.exports = { resolveSource, readText, withLock, atomicWrite, findSidecars, MAX_FILE_BYTES };

@@ -7,7 +7,8 @@ const MAX_COMMENT_CHARS = 16000;
 const PERSISTED_STATES = ['attached', 'review', 'detached'];
 const HASH = /^[a-f0-9]{64}$/;
 // IDs never change, so lc_ IDs written before 1.1.0 stay valid.
-const ID = /^(?:sc|lc)_[a-zA-Z0-9_-]{1,64}$/;
+const ID_PATTERN = '(?:sc|lc)_[a-zA-Z0-9_-]{1,64}';
+const ID = new RegExp(`^${ID_PATTERN}$`);
 
 function assertComment(text) {
   if (typeof text !== 'string' || !text.trim() || text.length > MAX_COMMENT_CHARS || text.includes('\0')) {
@@ -48,15 +49,18 @@ function assertNote(note) {
   }
 }
 function createNote(source, line, text, options = {}) {
-  const lines = linesOf(source);
+  return noteAt(linesOf(source), line, text, { ...options, base: options.base || sourceHash(source) });
+}
+// Like createNote, for callers that place many notes in the same source and split it once.
+function noteAt(lines, line, text, options) {
   assertLine(line, lines.length);
   return {
     id: options.id || `sc_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
-    base: options.base || sourceHash(source),
+    base: options.base,
     state: options.state || 'attached',
     line,
     text: normalizeComment(text),
     anchor: anchorAt(lines, line),
   };
 }
-module.exports = { createNote, assertNote, assertComment, normalizeComment, MAX_NOTES };
+module.exports = { createNote, noteAt, assertNote, assertComment, normalizeComment, MAX_NOTES, ID_PATTERN, PERSISTED_STATES };

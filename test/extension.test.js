@@ -190,6 +190,9 @@ const vscode = {
     isTrusted: true,
     textDocuments: [],
     root: '',
+    get workspaceFolders() {
+      return [{ uri: Uri.file(this.root) }];
+    },
     getWorkspaceFolder(uri) {
       return uri.scheme === 'file' && uri.fsPath.startsWith(`${this.root}${path.sep}`)
         ? { uri: Uri.file(this.root) }
@@ -227,7 +230,9 @@ const vscode = {
     },
     async openTextDocument(uri) {
       const known = this.textDocuments.find(doc => doc.uri.toString() === uri.toString());
-      if (known) return known;
+      if (known) {
+        return known;
+      }
 
       let text;
       if (uri.scheme === 'file') {
@@ -389,6 +394,19 @@ test('extension registers commands, hover, multiline draft filesystem and previe
   assert.ok(hoverProviders.length > 0);
   assert.ok(fileProviders.has('comment-sidecar-draft'));
   assert.ok(contentProviders.has('comment-sidecar-preview'));
+});
+
+test('workspace commands work when no source file is active', async t => {
+  const { root } = await setup(t);
+  vscode.window.activeTextEditor = undefined;
+  vscode.lastError = undefined;
+
+  await commands.get('commentSidecar.check')();
+  await commands.get('commentSidecar.copyMcp')();
+
+  assert.equal(vscode.lastError, undefined);
+  assert.ok(vscode.logs.some(line => line.includes('"problems": 0')));
+  assert.deepEqual(JSON.parse(vscode.clipboard).mcpServers['comment-sidecar'].args.slice(1), ['--root', root]);
 });
 
 test('multiline draft saves real sidecar, without changing the source', async t => {

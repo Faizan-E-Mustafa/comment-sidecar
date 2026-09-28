@@ -1,5 +1,6 @@
 'use strict';
 const { linesOf, sourceHash, assertLine } = require('./text');
+const { indexResults } = require('./anchors');
 
 function render(source, results, options = {}) {
   const lines = linesOf(source);
@@ -32,16 +33,8 @@ function render(source, results, options = {}) {
     return `${JSON.stringify(included)} [TRUNCATED: ${text.length - included.length} characters omitted]`;
   };
 
-  const byLine = new Map();
+  const byLine = indexResults(results);
   const unresolved = results.filter(item => item.line === null);
-  for (const item of results) {
-    if (item.line === null || item.line < start || item.line > end) {
-      continue;
-    }
-    const list = byLine.get(item.line) || [];
-    list.push(item);
-    byLine.set(item.line, list);
-  }
 
   const header = `${options.file || 'source'}:${start}-${end} source=${sourceHash(source)}`;
   const out = [header];

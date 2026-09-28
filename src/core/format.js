@@ -1,8 +1,9 @@
 'use strict';
 const { linesOf } = require('./text');
-const { assertNote, MAX_NOTES } = require('./note');
+const { assertNote, MAX_NOTES, ID_PATTERN, PERSISTED_STATES } = require('./note');
 const FORMAT_VERSION = 2;
-const HEADER = '# comment-sidecar v2';
+const HEADER = `# comment-sidecar v${FORMAT_VERSION}`;
+const HUNK = new RegExp(`^@@ (\\d+) @@ id=(${ID_PATTERN}) base=([a-f0-9]{64}) state=(${PERSISTED_STATES.join('|')})$`);
 const MAX_SIDECAR_BYTES = 2 * 1024 * 1024;
 
 function validName(name) {
@@ -14,7 +15,7 @@ function validName(name) {
 function validate(note, ids) {
   assertNote(note);
   if (ids.has(note.id)) {
-    throw new Error('Invalid or duplicate note ID.');
+    throw new Error(`Note IDs must be unique; found a duplicate: ${note.id}.`);
   }
   ids.add(note.id);
 }
@@ -63,7 +64,7 @@ function parse(raw) {
     if (notes.length >= MAX_NOTES) {
       throw new Error('Too many comments.');
     }
-    const head = /^@@ (\d+) @@ id=((?:sc|lc)_[a-zA-Z0-9_-]{1,64}) base=([a-f0-9]{64}) state=(attached|review|detached)$/.exec(lines[i++]);
+    const head = HUNK.exec(lines[i++]);
     if (!head) {
       throw new Error(`Invalid hunk header at sidecar line ${i}.`);
     }

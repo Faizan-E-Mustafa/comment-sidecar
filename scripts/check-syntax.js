@@ -1,7 +1,7 @@
 'use strict';
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
+const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const pending = ['src', 'test', 'scripts'].map(folder => path.join(root, folder));
@@ -13,7 +13,9 @@ while (pending.length) {
     if (entry.isDirectory()) {
       pending.push(file);
     } else if (file.endsWith('.js')) {
-      execFileSync(process.execPath, ['--check', file], { stdio: 'inherit' });
+      // Compile each file as a CommonJS module body, as `node --check` does, without a process per file.
+      const source = fs.readFileSync(file, 'utf8').replace(/^#!.*/, '');
+      vm.compileFunction(source, ['exports', 'require', 'module', '__filename', '__dirname'], { filename: file });
       count++;
     }
   }

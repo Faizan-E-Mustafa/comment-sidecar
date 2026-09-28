@@ -89,11 +89,13 @@ function validate(schema, input) {
     }
   }
 }
+function error(id, code, message) {
+  return { jsonrpc: '2.0', id: id ?? null, error: { code, message } };
+}
 function createHandler(root, allowWrite = false) {
   let initialized = false;
   let negotiated = false;
   const definitions = tools(allowWrite);
-  const error = (id, code, message) => ({ jsonrpc: '2.0', id: id ?? null, error: { code, message } });
   return async message => {
     const invalidRequest = !message
       || Array.isArray(message)
@@ -214,7 +216,7 @@ async function main() {
         try {
           response = await handle(JSON.parse(line));
         } catch {
-          response = { jsonrpc: '2.0', id: null, error: { code: -32700, message: 'Parse error' } };
+          response = error(null, -32700, 'Parse error');
         }
         if (response) {
           process.stdout.write(`${JSON.stringify(response)}\n`);
@@ -234,4 +236,4 @@ if (require.main === module) {
     process.exitCode = 1;
   });
 }
-module.exports = { createHandler, tools, validate };
+module.exports = { createHandler };

@@ -4,6 +4,7 @@ const { randomUUID } = require('node:crypto');
 const path = require('node:path');
 const { write } = require('../node/service');
 const { assertComment } = require('../core/note');
+const { linesOf } = require('../core/text');
 const { hasDirtyDocument } = require('./documents');
 
 class DraftProvider {
@@ -14,7 +15,7 @@ class DraftProvider {
     this.onSaved = onSaved;
   }
   create(snapshot, line, note) {
-    const name = `${path.basename(snapshot.sourcePath)}-line-${line || note.line}.txt`;
+    const name = `${path.basename(snapshot.sourcePath)}-line-${line}.txt`;
     const uri = vscode.Uri.from({ scheme: 'comment-sidecar-draft', path: `/${randomUUID()}/${name}` });
     this.entries.set(uri.toString(), {
       snapshot, line, id: note?.id, text: note?.text || '', time: Date.now(),
@@ -61,7 +62,7 @@ class DraftProvider {
       id: entry.id,
       line: entry.line,
       text,
-      expectedText: entry.snapshot.source.replace(/\r\n/g, '\n').split('\n')[entry.line - 1],
+      expectedText: linesOf(entry.snapshot.source)[entry.line - 1],
       expectedSource: entry.snapshot.sourceHash,
       expectedSidecar: entry.snapshot.sidecarHash,
     });

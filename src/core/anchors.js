@@ -1,6 +1,6 @@
 'use strict';
 const { linesOf, sourceHash, hash } = require('./text');
-const { createNote } = require('./note');
+const { noteAt } = require('./note');
 const { contextHash } = require('./fingerprints');
 
 function resolveNotes(source, notes) {
@@ -83,13 +83,34 @@ function resolveNotes(source, notes) {
 
 function rebaseNotes(source, results) {
   const base = sourceHash(source);
+  const lines = linesOf(source);
   return results.map(result => {
     if (result.line === null) {
       return result.note;
     }
-    return createNote(source, result.line, result.note.text, {
+    return noteAt(lines, result.line, result.note.text, {
       id: result.note.id, base, state: result.status === 'review' ? 'review' : 'attached',
     });
   });
 }
-module.exports = { resolveNotes, rebaseNotes };
+
+// Statuses that ask the user to look at a comment.
+const NEEDS_ATTENTION = ['review', 'ambiguous', 'detached'];
+
+// Attached results grouped by source line.
+function indexResults(results) {
+  const byLine = new Map();
+  for (const result of results) {
+    if (result.line === null) {
+      continue;
+    }
+    const items = byLine.get(result.line);
+    if (items) {
+      items.push(result);
+    } else {
+      byLine.set(result.line, [result]);
+    }
+  }
+  return byLine;
+}
+module.exports = { resolveNotes, rebaseNotes, indexResults, NEEDS_ATTENTION };

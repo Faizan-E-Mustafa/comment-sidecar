@@ -19,21 +19,14 @@ function createHighlights() {
     }
   }
   return {
-    apply(editor, results, style) {
-      const groups = new Map();
-      if (style === 'line' || style === 'underline') {
-        for (const item of results) {
-          if (item.line === null || item.line < 1 || item.line > editor.document.lineCount) {
-            continue;
-          }
-          const needsReview = item.status === 'review' || groups.get(item.line) === 'review';
-          const state = needsReview ? 'review' : 'highlight';
-          groups.set(item.line, state);
-        }
-      }
-
+    apply(editor, byLine, style) {
       const ranges = new Map([...types.keys()].map(key => [key, []]));
-      for (const [line, state] of groups) {
+      const visible = style === 'line' || style === 'underline';
+      for (const [line, items] of visible ? byLine : []) {
+        if (line > editor.document.lineCount) {
+          continue;
+        }
+        const state = items.some(item => item.status === 'review') ? 'review' : 'highlight';
         const sourceLine = editor.document.lineAt(line - 1);
         const first = style === 'underline' ? Math.max(0, sourceLine.text.search(/\S/)) : 0;
         // Range[] permits empty positions for whole-line decorations on blank lines.

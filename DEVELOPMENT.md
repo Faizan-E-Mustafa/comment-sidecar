@@ -37,10 +37,12 @@ src/core/        Pure logic. No filesystem, no VS Code.
   anchors.js       Find where each note belongs in the current source.
   edits.js         Move notes through live editor edits.
   render.js        Text output for agents (source + comments).
+  sidecar.js       The .comment suffix: source path to sidecar path and back.
   text.js          Line splitting, hashing, newline handling.
 src/node/        Filesystem access.
   workspace.js     Path safety, size limits, locking, atomic writes, sidecar search.
   service.js       Load, read, write and check: the operations the CLI, MCP and editor call.
+  rules.js         The agent instructions, pointed at a CLI path.
 src/extension/   VS Code integration.
   extension.js     Activation, presentation refresh, event wiring.
   commands.js      Command Palette commands.
@@ -52,7 +54,7 @@ src/extension/   VS Code integration.
   settings.js      Reads settings, using defaults from package.json.
 src/cli.js       The `sidecar` command.
 src/mcp.js       The optional MCP server (stdio).
-integration/     Agent instructions and MCP config examples.
+integration/     Agent instructions and a VS Code MCP config example.
 media/           Syntax highlighting for .comment files; the extension icon and README images.
 examples/        A small annotated file to try the extension on.
 test/            Tests; test/fixtures holds a golden .comment file.
@@ -125,7 +127,7 @@ Rebuilding from an extracted source ZIP produces identical archives.
 
 ## Benchmarks
 
-`npm run benchmark` times note creation, parsing, writing, matching, live edit tracking, hover lookup and rendering on 1,000- and 10,000-line files. Results go to `reports/BENCHMARK.json`.
+`npm run benchmark` times note creation, parsing, writing, matching, live edit tracking and rendering on 1,000- and 10,000-line files. Results go to `reports/BENCHMARK.json`.
 
 `npm run benchmark -- --baseline /path/to/other/checkout` also times another checkout of this code in the same run.
 

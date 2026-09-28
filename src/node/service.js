@@ -3,7 +3,8 @@ const path = require('node:path');
 const { parse, serialize, FORMAT_VERSION } = require('../core/format');
 const { createNote, normalizeComment } = require('../core/note');
 const { sourceHash, hash, linesOf, assertLine } = require('../core/text');
-const { resolveNotes, rebaseNotes } = require('../core/anchors');
+const { resolveNotes, rebaseNotes, NEEDS_ATTENTION } = require('../core/anchors');
+const { sourceOf } = require('../core/sidecar');
 const { render } = require('../core/render');
 const { resolveSource, readText, withLock, atomicWrite, findSidecars } = require('./workspace');
 
@@ -137,13 +138,12 @@ async function saveTracked(snapshot, source, results) {
   });
 }
 async function check(root, file) {
-  const sidecars = file
-    ? [`${(await resolveSource(root, file)).sourcePath}.comment`]
-    : await findSidecars(root);
+  const sources = file
+    ? [(await resolveSource(root, file)).sourcePath]
+    : (await findSidecars(root)).map(sourceOf);
   const reports = [];
 
-  for (const sidecar of sidecars) {
-    const target = sidecar.slice(0, -8);
+  for (const target of sources) {
     const display = path.relative(root, target).split(path.sep).join('/');
 
     try {
@@ -163,9 +163,9 @@ async function check(root, file) {
     }
   }
 
-  const problems = reports.filter(report => ['review', 'detached', 'ambiguous', 'error'].includes(report.status));
+  const problems = reports.filter(report => report.status === 'error' || NEEDS_ATTENTION.includes(report.status));
   return {
-    files: sidecars.length,
+    files: sources.length,
     comments: reports.filter(report => report.id).length,
     problems: problems.length,
     reports,

@@ -3,6 +3,7 @@
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const service = require('./node/service');
+const { agentRules } = require('./node/rules');
 const { version } = require('../package.json');
 
 const HELP = `Comment Sidecar ${version} — line-level external comments, without modifying source.
@@ -71,7 +72,7 @@ async function main(argv = process.argv.slice(2)) {
     return;
   }
   if (command === 'rules') {
-    process.stdout.write(await fs.readFile(path.join(__dirname, '../integration/AGENTS.snippet.md'), 'utf8'));
+    process.stdout.write(await agentRules(`node ${JSON.stringify(path.join(__dirname, 'cli.js'))}`));
     return;
   }
   if (command === 'check') {
@@ -136,4 +137,4 @@ if (require.main === module) {
     process.exitCode = 2;
   });
 }
-module.exports = { main, argumentsOf };
+module.exports = { argumentsOf };

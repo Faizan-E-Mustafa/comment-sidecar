@@ -6,7 +6,9 @@ const Module = require('node:module');
 const { performance } = require('node:perf_hooks');
 
 function measure(fn, iterations = 100) {
-  for (let i = 0; i < 10; i++) fn();
+  for (let i = 0; i < 10; i++) {
+    fn();
+  }
   const samples = [];
   for (let i = 0; i < iterations; i++) {
     const start = performance.now();
@@ -83,12 +85,6 @@ function run(implementation) {
     const raw = implementation.serialize('example.ts', notes);
     const persisted = implementation.parse(raw).notes;
     const results = implementation.resolveNotes(source, persisted);
-    const byLine = new Map();
-    for (const result of results) {
-      const items = byLine.get(result.line) || [];
-      items.push(result);
-      byLine.set(result.line, items);
-    }
     const changed = '\n' + source;
     reports.push({
       lineCount,
@@ -105,7 +101,6 @@ function run(implementation) {
       trackEditorInsertion: measure(() => implementation.trackEdits(
         source, changed, results, [{ rangeOffset: 0, rangeLength: 0, text: '\n' }],
       )),
-      hoverLookup: measure(() => byLine.get(4), 1000),
       render200Lines: measure(() => implementation.render(source, results, { start: 1, end: 200 })),
     });
     reports.push({
@@ -130,11 +125,13 @@ if (args.length && (args.length !== 2 || args[0] !== '--baseline')) {
     arch: process.arch,
     cpu: os.cpus()[0]?.model,
     measuredAt: new Date().toISOString(),
-    method: 'Warm single-process synthetic microbenchmarks. 10 warmups, 100 samples (1000 for hover). '
+    method: 'Warm single-process synthetic microbenchmarks. 10 warmups, 100 samples. '
       + 'Store.changed uses a minimal document fixture with no editor UI or filesystem. This is NOT '
       + 'end-to-end editor latency or a token benchmark.',
   };
-  if (args.length) result.baseline = run(loadImplementation(path.resolve(args[1])));
+  if (args.length) {
+    result.baseline = run(loadImplementation(path.resolve(args[1])));
+  }
   result.current = run(loadImplementation(root));
   const directory = path.join(root, 'reports');
   fs.mkdirSync(directory, { recursive: true });

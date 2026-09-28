@@ -11,6 +11,7 @@ const { readSettings } = require('./settings');
 const { render } = require('../core/render');
 const { matchingDocuments, sidecarRenameEdit } = require('./documents');
 const { registerCommands } = require('./commands');
+const { SUFFIX, isSidecar, sourceOf } = require('../core/sidecar');
 
 function activate(context) {
   const output = vscode.window.createOutputChannel('Comment Sidecar');
@@ -32,8 +33,8 @@ function activate(context) {
     timers.set(key, setTimeout(() => {
       timers.delete(key);
       void refresh(uri);
+      previewEvents.fire(previewUri(uri));
     }, 100));
-    previewEvents.fire(previewUri(uri));
   }
   const store = new Store(updated, log);
 
@@ -44,6 +45,7 @@ function activate(context) {
       updated(document.uri);
     }
   }
+  const changedSidecar = uri => invalidateSource(vscode.Uri.file(sourceOf(uri.fsPath))).catch(log);
   const drafts = new DraftProvider(invalidateSource);
   const previewUri = uri => vscode.Uri.from({
     scheme: 'comment-sidecar-preview',
@@ -57,7 +59,7 @@ function activate(context) {
       if (editor.document.uri.toString() !== uri.toString()) {
         continue;
       }
-      highlights.apply(editor, [], 'off');
+      highlights.apply(editor, new Map(), 'off');
       editor.setDecorations(decoration, []);
     }
     if (vscode.window.activeTextEditor?.document.uri.toString() === uri.toString()) {
@@ -65,17 +67,10 @@ function activate(context) {
     }
   }
 
-  function updateStatus(entry, uri) {
+  function updateStatus(pending, uri) {
     if (vscode.window.activeTextEditor?.document.uri.toString() !== uri.toString()) {
       return;
     }
-    if (!entry.results.length) {
-      status.hide();
-      return;
-    }
-
-    const pending = entry.results
-      .filter(item => ['review', 'ambiguous', 'detached'].includes(item.status)).length;
     if (!pending) {
       status.hide();
       return;
@@ -99,18 +94,19 @@ function activate(context) {
         return;
       }
 
-      diagnostics.set(uri, diagnosticsFor(document, entry.results));
+      const problems = diagnosticsFor(document, entry.results);
+      diagnostics.set(uri, problems);
       const settings = readSettings(vscode.workspace.getConfiguration('commentSidecar', uri));
       const options = markerDecorations(document, entry.byLine, settings);
       for (const editor of vscode.window.visibleTextEditors) {
         if (editor.document.uri.toString() !== uri.toString()) {
           continue;
         }
-        highlights.apply(editor, entry.results, settings.highlightStyle);
+        highlights.apply(editor, entry.byLine, settings.highlightStyle);
         editor.setDecorations(decoration, options);
       }
 
-      updateStatus(entry, uri);
+      updateStatus(problems.length, uri);
     } catch (error) {
       clearPresentation(uri);
       log(error);
@@ -146,9 +142,6 @@ function activate(context) {
     }),
     vscode.languages.registerHoverProvider({ scheme: 'file' }, {
       async provideHover(document, position, token) {
-        if (!store.supports(document)) {
-          return undefined;
-        }
         try {
           const entry = await store.get(document);
           if (token.isCancellationRequested || !entry) {
@@ -176,8 +169,8 @@ function activate(context) {
     }),
     vscode.workspace.onDidChangeTextDocument(event => store.changed(event)),
     vscode.workspace.onDidSaveTextDocument(document => {
-      if (document.uri.scheme === 'file' && document.uri.fsPath.endsWith('.comment')) {
-        void invalidateSource(vscode.Uri.file(document.uri.fsPath.slice(0, -8))).catch(log);
+      if (document.uri.scheme === 'file' && isSidecar(document.uri.fsPath)) {
+        void changedSidecar(document.uri);
         return;
       }
       void store.saved(document);
@@ -213,8 +206,7 @@ function activate(context) {
     }),
   );
 
-  const watcher = vscode.workspace.createFileSystemWatcher('**/*.comment');
-  const changedSidecar = uri => invalidateSource(vscode.Uri.file(uri.fsPath.slice(0, -8))).catch(log);
+  const watcher = vscode.workspace.createFileSystemWatcher(`**/*${SUFFIX}`);
   context.subscriptions.push(
     watcher,
     watcher.onDidChange(changedSidecar),
