@@ -192,9 +192,9 @@ test('CLI subprocess reads, writes, and reports status with exit codes', async t
   await assert.rejects(() => exec(process.execPath, [cli, 'read', '--nonsense']), error => error.code === 2);
 });
 
-test('MCP initialize, tool discovery, read and write through real service', async t => {
+test('MCP initialize, tool discovery and read through real service', async t => {
   const root = await fixture(t);
-  const handler = createHandler(root, true);
+  const handler = createHandler(root);
 
   let response = await handler({
     jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-11-25' },
@@ -203,12 +203,29 @@ test('MCP initialize, tool discovery, read and write through real service', asyn
   await handler({ jsonrpc: '2.0', method: 'notifications/initialized' });
 
   response = await handler({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
-  assert.equal(response.result.tools.length, 3);
+  assert.deepEqual(response.result.tools.map(tool => tool.name), ['comment_sidecar_read', 'comment_sidecar_check']);
+  assert.ok(response.result.tools.every(tool => tool.annotations.readOnlyHint));
 
-  const snapshot = await service.load(root, 'app.ts');
+  await add(root, 'MCP note.');
   response = await handler({
     jsonrpc: '2.0',
     id: 3,
+    method: 'tools/call',
+    params: { name: 'comment_sidecar_read', arguments: { file: 'app.ts', start: 2, end: 2 } },
+  });
+  assert.match(response.result.content[0].text, /MCP note/);
+});
+
+test('MCP has no write tool, so a well-formed write call changes nothing', async t => {
+  const root = await fixture(t);
+  const handler = createHandler(root);
+  await handler({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05' } });
+  await handler({ jsonrpc: '2.0', method: 'notifications/initialized' });
+
+  const snapshot = await service.load(root, 'app.ts');
+  const denied = await handler({
+    jsonrpc: '2.0',
+    id: 2,
     method: 'tools/call',
     params: {
       name: 'comment_sidecar_write',
@@ -216,36 +233,14 @@ test('MCP initialize, tool discovery, read and write through real service', asyn
         file: 'app.ts',
         operation: 'add',
         line: 2,
-        text: 'MCP note.',
+        text: 'x',
         expectedText: 'if (!ready) wait();',
         ...revisions(snapshot),
       },
     },
   });
-  assert.equal(response.result.isError, undefined);
-
-  response = await handler({
-    jsonrpc: '2.0',
-    id: 4,
-    method: 'tools/call',
-    params: { name: 'comment_sidecar_read', arguments: { file: 'app.ts', start: 2, end: 2 } },
-  });
-  assert.match(response.result.content[0].text, /MCP note/);
-});
-
-test('MCP read-only mode exposes no write tool', async t => {
-  const root = await fixture(t);
-  const handler = createHandler(root);
-  await handler({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2024-11-05' } });
-  await handler({ jsonrpc: '2.0', method: 'notifications/initialized' });
-
-  const list = await handler({ jsonrpc: '2.0', id: 2, method: 'tools/list' });
-  assert.equal(list.result.tools.length, 2);
-
-  const denied = await handler({
-    jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'comment_sidecar_write', arguments: {} },
-  });
   assert.equal(denied.error.code, -32602);
+  assert.deepEqual((await service.load(root, 'app.ts')).notes, []);
 });
 
 test('MCP validates inputs and returns file errors as tool errors', async t => {

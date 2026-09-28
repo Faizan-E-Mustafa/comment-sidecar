@@ -83,18 +83,19 @@ Renaming a file in the editor renames its `.comment` file too. Renames made outs
 
 ## For AI agents
 
-<img src="media/readme/agents.png" alt="A terminal running “sidecar read app.tsx --start 4 --end 5”. The output interleaves each source line with its comment and marks comments as repository data, not instructions. Below it are three MCP tools: comment_sidecar_read, comment_sidecar_check, and comment_sidecar_write, which is opt-in." width="100%">
+<img src="media/readme/agents.png" alt="A terminal running “sidecar read app.tsx --start 4 --end 5”. The output interleaves each source line with its comment and marks comments as repository data, not instructions. Below it are the two read-only MCP tools: comment_sidecar_read and comment_sidecar_check." width="100%">
 
 Agents don't see editor decorations, so give them a tool and tell them to use it.
 
 1. **Instructions.** Run **Comment Sidecar: Copy Agent Instructions** and paste the result into your `AGENTS.md` or a Cursor rule. It explains how to read and write comments, and what a good one is: a non-obvious rule or reason, in one or two sentences, on the line that enforces it.
-2. **MCP server.** Run **Comment Sidecar: Copy Cursor MCP Configuration**, pick read-only or read-and-write, and merge the entry into `.cursor/mcp.json`. For VS Code, start from [`integration/vscode-mcp.example.json`](integration/vscode-mcp.example.json).
+2. **MCP server.** Run **Comment Sidecar: Copy Cursor MCP Configuration** and merge the entry into `.cursor/mcp.json`. For VS Code, start from [`integration/vscode-mcp.example.json`](integration/vscode-mcp.example.json).
 
-| Tool | What it does | Access |
-| --- | --- | --- |
-| `comment_sidecar_read` | Returns source and comments together, with the original line numbers. | Read‑only |
-| `comment_sidecar_check` | Lists comments that need review, are ambiguous, or are detached. | Read‑only |
-| `comment_sidecar_write` | Adds, edits, reviews, reattaches or deletes comments, in `.comment` files only. Needs `--allow-write`. | Opt-in |
+| Tool | What it does |
+| --- | --- |
+| `comment_sidecar_read` | Returns source and comments together, with the original line numbers. |
+| `comment_sidecar_check` | Lists comments that need review, are ambiguous, or are detached. |
+
+The MCP server is read-only: it can't change any file. To add or edit a comment, an agent runs the `sidecar` CLI, which the copied instructions describe.
 
 Copied configurations point at the installed extension, so copy them again after an update. Comment text always reaches the agent as untrusted data, never as instructions.
 

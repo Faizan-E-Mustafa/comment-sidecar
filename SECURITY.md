@@ -9,8 +9,8 @@
 ## Who can write
 
 - **Editor:** only in a trusted workspace (VS Code workspace trust). Untrusted workspaces are read-only: hovers work, writes do not.
-- **MCP server:** read-only unless started with `--allow-write`. Even then it can change only `.comment` files.
-- **CLI:** performs only the command it is given.
+- **MCP server:** read-only. It has no tool that changes a file.
+- **CLI:** performs only the command it is given. This is how an agent adds or edits a comment, and it changes only `.comment` files.
 
 ## Path safety
 

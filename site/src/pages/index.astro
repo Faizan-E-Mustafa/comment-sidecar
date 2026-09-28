@@ -36,7 +36,6 @@ const STATES = [
 const TOOLS = [
   ['comment_sidecar_read', 'Source and comments together'],
   ['comment_sidecar_check', 'Comments that need attention'],
-  ['comment_sidecar_write', 'Opt-in. Edits .comment files only'],
 ];
 const FAQ = [
   ['Does it ever change my source files?', 'No. Only <code>.comment</code> files are written. A sidecar that can’t be read is reported as an error; it is never treated as empty or overwritten.'],
@@ -163,7 +162,7 @@ const FAQ = [
             <div><dt>Instructions</dt><dd>Run <strong>Copy Agent Instructions</strong> and paste the result into <code>AGENTS.md</code> or a Cursor rule.</dd></div>
             <div><dt>MCP server</dt><dd>Run <strong>Copy Cursor MCP Configuration</strong> and merge it into <code>.cursor/mcp.json</code>.</dd></div>
           </dl>
-          <p class="small">Comment text reaches the agent as untrusted data, never as instructions. Writing is opt-in and only touches <code>.comment</code> files.</p>
+          <p class="small">Comment text reaches the agent as untrusted data, never as instructions. The MCP server is read-only.</p>
         </div>
         <div class="stack">
           <Window tab="Terminal">
@@ -174,8 +173,8 @@ const FAQ = [
             </div>
           </Window>
           <ul class="tools" aria-label="MCP tools">
-            {TOOLS.map(([name, text], index) => (
-              <li class:list={{ 'opt-in': index === TOOLS.length - 1 }}><Fragment set:html={ring(18)} /><code>{name}</code><span>{text}</span></li>
+            {TOOLS.map(([name, text]) => (
+              <li><Fragment set:html={ring(18)} /><code>{name}</code><span>{text}</span></li>
             ))}
           </ul>
         </div>
@@ -216,7 +215,7 @@ const FAQ = [
     <span class="j-p">{'}'}</span>
   <span class="j-p">{'}'}</span>
 <span class="j-p">{'}'}</span></pre>
-            <p>Run <strong>Copy Cursor MCP Configuration</strong> to get this with your real paths filled in. Choose read and write to add <code>--allow-write</code>. Copy it again after an update.</p>
+            <p>Run <strong>Copy Cursor MCP Configuration</strong> to get this with your real paths filled in. Copy it again after an update.</p>
           </div>
         </figure>
       </section>

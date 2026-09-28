@@ -53,7 +53,7 @@ src/extension/   VS Code integration.
   documents.js     Open-document lookup and sidecar renames.
   settings.js      Reads settings, using defaults from package.json.
 src/cli.js       The `sidecar` command.
-src/mcp.js       The optional MCP server (stdio).
+src/mcp.js       The read-only MCP server (stdio).
 integration/     Agent instructions and a VS Code MCP config example.
 media/           Syntax highlighting for .comment files; the extension icon and README images.
 examples/        A small annotated file to try the extension on.
@@ -70,6 +70,7 @@ Dependencies point one way: `extension` and the CLI/MCP call `node/service.js`; 
 Each rule has tests. Keep them passing.
 
 - **Source files are never written.** Only `<source>.comment` changes.
+- **The MCP server is read-only.** It offers `comment_sidecar_read` and `comment_sidecar_check`. Writes go through the CLI or the editor.
 - **Writes need fresh revisions.** Every write passes the source hash and sidecar hash from a recent read. `add` and `reanchor` also pass the exact target line text. Stale input fails.
 - **Writes are serialized and atomic.** `withLock` takes `<source>.comment.lock`; `atomicWrite` re-checks the sidecar hash and renames a temp file into place.
 - **Unreadable sidecars are never overwritten.** A parse error stops every operation. It is never treated as "no comments".

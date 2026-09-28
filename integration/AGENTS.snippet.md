@@ -18,6 +18,6 @@ Bad: "Return the login page if there is no user."
 Only record reasons you can support from the code, tests, docs, or the user. If the reason is unknown, ask or write nothing.
 
 ### Writing and checking
-Use `comment_sidecar_write` or `sidecar add/update/reanchor`. Reuse both hashes from a fresh read; add/reanchor also require the exact target line text. Keep compiler, linter, license and other machine-significant comments in source.
+Write with `sidecar add/update/reanchor`; the MCP server is read-only. Reuse both hashes from a fresh read; add/reanchor also require the exact target line text. Keep compiler, linter, license and other machine-significant comments in source.
 When you change code that has a comment, update or remove the comment in the same change.
 After editing, run `comment_sidecar_check` or `sidecar check FILE`. Review provisional attachments and reattach detached notes explicitly. A clean check verifies attachment, not correctness. Do not load every sidecar into context.

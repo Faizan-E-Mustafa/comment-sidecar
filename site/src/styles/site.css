@@ -508,7 +508,6 @@ kbd {
 .tools li { display: grid; grid-template-columns: 18px 13.5em minmax(0, 1fr); align-items: center; gap: 14px; padding: 12px 16px; font-size: 13px; }
 .tools li + li { border-top: 1px solid var(--line); }
 .tools .ring { color: var(--blue); }
-.tools .opt-in .ring { color: var(--muted); }
 .tools code { color: var(--ink); font-weight: 500; }
 .tools span { color: var(--muted); font-size: 14px; }
 @media (max-width: 560px) {

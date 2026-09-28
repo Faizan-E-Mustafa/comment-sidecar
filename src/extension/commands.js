@@ -202,19 +202,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
   });
   command('copyMcp', async () => {
     const root = workspaceRoot();
-    const mode = await vscode.window.showQuickPick(
-      ['Read-only', 'Read and write comment sidecars'],
-      { placeHolder: 'MCP access: source code is never writable through these tools' },
-    );
-    if (!mode) {
-      return;
-    }
-
     const args = [context.asAbsolutePath('src/mcp.js'), '--root', root];
-    if (mode !== 'Read-only') {
-      args.push('--allow-write');
-    }
-
     const config = { mcpServers: { 'comment-sidecar': { type: 'stdio', command: 'node', args } } };
     await vscode.env.clipboard.writeText(JSON.stringify(config, null, 2));
     void vscode.window.showInformationMessage('Copied Cursor MCP configuration. Merge its server entry into .cursor/mcp.json.');

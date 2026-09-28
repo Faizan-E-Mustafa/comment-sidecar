@@ -3,7 +3,7 @@
     "comment-sidecar": {
       "type": "stdio",
       "command": "node",
-      "args": ["/absolute/path/to/comment-sidecar/src/mcp.js", "--root", "${workspaceFolder}", "--allow-write"]
+      "args": ["/absolute/path/to/comment-sidecar/src/mcp.js", "--root", "${workspaceFolder}"]
     }
   }
 }
