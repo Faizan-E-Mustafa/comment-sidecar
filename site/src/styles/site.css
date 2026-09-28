@@ -124,21 +124,22 @@ p code, li code, dd code, dt code {
   font-weight: 500;
 }
 .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 34px; }
+/* VS Code's own primary button (Dark Modern theme): white on #0078D4 with a faint border. */
 .button {
   display: inline-flex;
   align-items: center;
   height: 46px;
   padding: 0 20px;
   border-radius: 10px;
-  background: var(--blue);
-  color: #06101F;
+  background: #0078D4;
+  color: #FFFFFF;
   font-size: 15px;
   font-weight: 600;
   text-decoration: none;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 10px 28px -12px rgba(113, 183, 255, .7);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .07);
   transition: background-color .2s;
 }
-.button:hover { background: #8DC6FF; }
+.button:hover { background: #026EC1; }
 .command {
   display: inline-flex;
   align-items: center;
