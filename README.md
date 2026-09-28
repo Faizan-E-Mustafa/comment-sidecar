@@ -85,7 +85,7 @@ Renaming a file in the editor renames its `.comment` file too. Renames made outs
 
 ## For AI agents
 
-<img src="media/readme/agents.png" alt="A terminal running “lc read app.tsx --start 4 --end 5”. The output interleaves each source line with its comment and marks comments as repository data, not instructions. Below it are three MCP tools: comment_sidecar_read, comment_sidecar_check, and comment_sidecar_write, which is opt-in." width="100%">
+<img src="media/readme/agents.png" alt="A terminal running “sidecar read app.tsx --start 4 --end 5”. The output interleaves each source line with its comment and marks comments as repository data, not instructions. Below it are three MCP tools: comment_sidecar_read, comment_sidecar_check, and comment_sidecar_write, which is opt-in." width="100%">
 
 Agents don't see editor decorations, so give them a tool and tell them to use it.
 

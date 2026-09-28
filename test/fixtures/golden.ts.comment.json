@@ -2,7 +2,7 @@
   "name": "golden.ts",
   "notes": [
     {
-      "id": "lc_first",
+      "id": "sc_first",
       "base": "d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d",
       "state": "attached",
       "line": 1,
@@ -16,7 +16,7 @@
       "text": "Top of file.\n\n@@ not a header\n@anchor not metadata\n+// body"
     },
     {
-      "id": "lc_blank",
+      "id": "sc_blank",
       "base": "d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d",
       "state": "attached",
       "line": 2,
@@ -30,7 +30,7 @@
       "text": "Blank line with CRLF text.\nSecond line."
     },
     {
-      "id": "lc_again",
+      "id": "sc_again",
       "base": "d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d",
       "state": "attached",
       "line": 5,
@@ -44,7 +44,7 @@
       "text": "Second note on the same line."
     },
     {
-      "id": "lc_wait",
+      "id": "sc_wait",
       "base": "d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d",
       "state": "attached",
       "line": 5,
@@ -58,7 +58,7 @@
       "text": "Wait until restoration finishes."
     },
     {
-      "id": "lc_unicode",
+      "id": "sc_unicode",
       "base": "d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d",
       "state": "review",
       "line": 6,
@@ -72,7 +72,7 @@
       "text": "Unicode: αβ 日本語 🧪"
     },
     {
-      "id": "lc_weak",
+      "id": "sc_weak",
       "base": "d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d",
       "state": "detached",
       "line": 7,
@@ -86,7 +86,7 @@
       "text": "Weak target."
     },
     {
-      "id": "lc_last",
+      "id": "sc_last",
       "base": "d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d",
       "state": "attached",
       "line": 10,

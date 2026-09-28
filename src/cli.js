@@ -7,16 +7,16 @@ const { version } = require('../package.json');
 
 const HELP = `Comment Sidecar ${version} — line-level external comments, without modifying source.
 
-lc read FILE [--start N --end N] [--mode annotated|comments|code] [--comment-budget N] [--json]
-lc add FILE --line N --text TEXT --expected-text TEXT --source-hash HASH --sidecar-hash HASH
-lc update FILE --id ID --text TEXT --source-hash HASH --sidecar-hash HASH
-lc remove FILE --id ID --source-hash HASH --sidecar-hash HASH
-lc reanchor FILE --id ID --line N --expected-text TEXT --source-hash HASH --sidecar-hash HASH
-lc review FILE --id ID --source-hash HASH --sidecar-hash HASH
-lc sync FILE --source-hash HASH --sidecar-hash HASH
-lc check [FILE] [--json]
-lc rules
-lc --version
+sidecar read FILE [--start N --end N] [--mode annotated|comments|code] [--comment-budget N] [--json]
+sidecar add FILE --line N --text TEXT --expected-text TEXT --source-hash HASH --sidecar-hash HASH
+sidecar update FILE --id ID --text TEXT --source-hash HASH --sidecar-hash HASH
+sidecar remove FILE --id ID --source-hash HASH --sidecar-hash HASH
+sidecar reanchor FILE --id ID --line N --expected-text TEXT --source-hash HASH --sidecar-hash HASH
+sidecar review FILE --id ID --source-hash HASH --sidecar-hash HASH
+sidecar sync FILE --source-hash HASH --sidecar-hash HASH
+sidecar check [FILE] [--json]
+sidecar rules
+sidecar --version
 
 All commands accept --root PATH (default: current directory).
 Use --text-file PATH instead of --text for multiline comments.

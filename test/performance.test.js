@@ -55,7 +55,7 @@ test('lazy resolver handles mixed current, old and detached annotations', () => 
 });
 
 test('cleanup previews and removes only allowlisted build artifacts and reports', t => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-clean-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sidecar-clean-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   fs.mkdirSync(path.join(root, 'dist'));
   fs.mkdirSync(path.join(root, 'reports'));
@@ -89,7 +89,7 @@ test('cleanup previews and removes only allowlisted build artifacts and reports'
 });
 
 test('cleanup refuses to follow symlinked reports directories or build files', t => {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'lc-clean-links-'));
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sidecar-clean-links-'));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
 
   const outside = path.join(root, 'unrelated');

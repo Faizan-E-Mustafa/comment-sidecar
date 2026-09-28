@@ -1,29 +1,29 @@
 # comment-sidecar v2
 --- golden.ts
 +++ golden.ts.annotated
-@@ 1 @@ id=lc_first base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
+@@ 1 @@ id=sc_first base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
 @anchor sha256 before=0 after=2 strong=1 target=3fdbd7755de145a2a82c9afe0e45a638dc3107dd6876c78ebc471bf2722ba383 context=64a3e302b021270184d7d7bafc90fab1a1acadeed39031a6083522e47ae607a7
 +// Top of file.
 +// 
 +// @@ not a header
 +// @anchor not metadata
 +// +// body
-@@ 2 @@ id=lc_blank base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
+@@ 2 @@ id=sc_blank base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
 @anchor sha256 before=1 after=2 strong=0 target=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 context=366fd675d0a514b84b5e5faa5c66388a87dd70690c820b0c676259eb19bd06ec
 +// Blank line with CRLF text.
 +// Second line.
-@@ 5 @@ id=lc_again base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
+@@ 5 @@ id=sc_again base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
 @anchor sha256 before=2 after=2 strong=1 target=cf5f0336b7e432bb1f11570728bdd0628dd3d217bf96e24277270e4cd0c0f91d context=adfd7b63564587bb287d0db477f45efa4d318465582304bc68edd5a45e67b765
 +// Second note on the same line.
-@@ 5 @@ id=lc_wait base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
+@@ 5 @@ id=sc_wait base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
 @anchor sha256 before=2 after=2 strong=1 target=cf5f0336b7e432bb1f11570728bdd0628dd3d217bf96e24277270e4cd0c0f91d context=adfd7b63564587bb287d0db477f45efa4d318465582304bc68edd5a45e67b765
 +// Wait until restoration finishes.
-@@ 6 @@ id=lc_unicode base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=review
+@@ 6 @@ id=sc_unicode base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=review
 @anchor sha256 before=2 after=2 strong=1 target=de7aeb9440756c906e775d55d00778eb4efd4acc851dcef562ee253d6ed9075d context=8d650f33b0ad24b4c2fe988423d8a55cef9d39e7a6f960616245206c30b3d641
 +// Unicode: αβ 日本語 🧪
-@@ 7 @@ id=lc_weak base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=detached
+@@ 7 @@ id=sc_weak base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=detached
 @anchor sha256 before=2 after=2 strong=0 target=737db166c79ae98e44bbe5ad43e03bf3774f7b3696068842d56a72e863dfeb20 context=cb3659ce89b66c26b184526f7077c0e6df5d1e56be98c27303850edda6b95e2b
 +// Weak target.
-@@ 10 @@ id=lc_last base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
+@@ 10 @@ id=sc_last base=d643f2eb38cc6257387969901b2878131d5773be0345cd5ca2dd562ffa0e343d state=attached
 @anchor sha256 before=2 after=0 strong=0 target=e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855 context=93604c7bceaedf59b67c67d0495ea23d5f858536681e8c63290f2c7191182837
 +// Final empty line.

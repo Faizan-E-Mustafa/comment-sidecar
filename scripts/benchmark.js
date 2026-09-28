@@ -78,7 +78,7 @@ function run(implementation) {
       source,
       4 + i * Math.floor((lineCount - 8) / noteCount),
       'Preserve the initialization order before using this value.',
-      { base, id: `lc_bench${i}` },
+      { base, id: `sc_bench${i}` },
     ));
     const raw = implementation.serialize('example.ts', notes);
     const persisted = implementation.parse(raw).notes;

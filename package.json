@@ -26,7 +26,7 @@
   ],
   "main": "./src/extension/extension.js",
   "bin": {
-    "lc": "./src/cli.js",
+    "sidecar": "./src/cli.js",
     "comment-sidecar-mcp": "./src/mcp.js"
   },
   "activationEvents": [

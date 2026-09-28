@@ -9,10 +9,10 @@ It holds comments attached to single lines of the source. Tools write these file
 # comment-sidecar v2
 --- app.tsx
 +++ app.tsx.annotated
-@@ 4 @@ id=lc_loading base=<sha256> state=attached
+@@ 4 @@ id=sc_loading base=<sha256> state=attached
 @anchor sha256 before=2 after=2 strong=1 target=<sha256> context=<sha256>
 +// Wait for session restoration before choosing a screen.
-@@ 5 @@ id=lc_signedout base=<sha256> state=review
+@@ 5 @@ id=sc_signedout base=<sha256> state=review
 @anchor sha256 before=2 after=2 strong=1 target=<sha256> context=<sha256>
 +// A missing user means signed out only after loading finishes.
 +// Second line of the same comment.
@@ -43,7 +43,7 @@ The names in the header are informational. The tool always finds the source by t
 Rules:
 
 - `<line>` is the 1-based line number in the source. It is not a diff offset.
-- `<id>` matches `lc_[a-zA-Z0-9_-]{1,64}` and is unique in the file. It never changes, even when the comment is edited or reattached.
+- `<id>` matches `sc_[a-zA-Z0-9_-]{1,64}` and is unique in the file. IDs written before 1.1.0 start with `lc_` and are still valid. It never changes, even when the comment is edited or reattached.
 - `<state>` is `attached`, `review` or `detached`.
 - Field order is fixed.
 - No source code is ever stored. Lines starting with a space (context), `+` without `// `, or `-` are rejected.

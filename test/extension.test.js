@@ -757,7 +757,7 @@ test('deleting the target removes its highlight instead of highlighting its repl
 test('an unsupported sidecar is reported, shows no stale presentation and is never rewritten by the editor', async t => {
   const { document, editor, api } = await setup(t);
   const unsupported =
-    '# comment-sidecar v1\n--- app.ts\n+++ app.ts.annotated\n@@ -1,3 +1,4 @@ id=lc_old base=' +
+    '# comment-sidecar v1\n--- app.ts\n+++ app.ts.annotated\n@@ -1,3 +1,4 @@ id=sc_old base=' +
     'a'.repeat(64) +
     ' state=attached\n const ready = false;\n+// Old-format comment.\n if (!ready) wait();\n start();\n';
   const sidecar = `${document.uri.fsPath}.comment`;

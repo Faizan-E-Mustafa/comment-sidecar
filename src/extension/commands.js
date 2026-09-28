@@ -187,7 +187,7 @@ function registerCommands(context, { store, drafts, output, log, updated, previe
   command('copyRules', async () => {
     const text = await fs.readFile(context.asAbsolutePath('integration/AGENTS.snippet.md'), 'utf8');
     const invocation = `node ${JSON.stringify(context.asAbsolutePath('src/cli.js'))}`;
-    await vscode.env.clipboard.writeText(text.replaceAll('lc ', `${invocation} `));
+    await vscode.env.clipboard.writeText(text.replaceAll('`sidecar ', `\`${invocation} `));
     void vscode.window.showInformationMessage('Copied agent instructions. Merge into AGENTS.md or a Cursor rule; existing files have not been changed.');
   });
   command('copyMcp', async () => {

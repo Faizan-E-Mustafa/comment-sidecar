@@ -185,7 +185,7 @@ test('combined read preserves original numbers and emits no raw patch hashes per
   assert.match(result, /^2 \|/m);
   assert.match(result, /^3 \|/m);
   assert.match(result, /^4 \|/m);
-  assert.match(result, /@3 \[lc_/);
+  assert.match(result, /@3 \[sc_/);
   assert.doesNotMatch(result, /@@ -|base=|\+\/\//);
 });
 

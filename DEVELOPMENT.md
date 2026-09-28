@@ -50,7 +50,7 @@ src/extension/   VS Code integration.
   drafts.js        The draft editor for writing a comment.
   documents.js     Open-document lookup and sidecar renames.
   settings.js      Reads settings, using defaults from package.json.
-src/cli.js       The `lc` command.
+src/cli.js       The `sidecar` command.
 src/mcp.js       The optional MCP server (stdio).
 integration/     Agent instructions and MCP config examples.
 media/           Syntax highlighting for .comment files; the extension icon and README images.

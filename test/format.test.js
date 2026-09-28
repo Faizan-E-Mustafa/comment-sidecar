@@ -14,17 +14,17 @@ const { render } = require('../src/core/render');
 const service = require('../src/node/service');
 const { sourceHash, hash } = require('../src/core/text');
 const SOURCE = 'function App() {\n  const ready = session.ready;\n  if (!ready) return null;\n  return render();\n}\n';
-const note = () => createNote(SOURCE, 3, 'Wait until restoration finishes.', { id: 'lc_wait' });
+const note = () => createNote(SOURCE, 3, 'Wait until restoration finishes.', { id: 'sc_wait' });
 const v2 = notes => parse(serialize('app.ts', notes)).notes;
 const FIXTURES = path.join(__dirname, 'fixtures');
 const guards = snapshot => ({ expectedSource: snapshot.sourceHash, expectedSidecar: snapshot.sidecarHash });
-const FOREIGN = '# comment-sidecar v1\n--- app.ts\n+++ app.ts.annotated\n@@ -2,3 +2,4 @@ id=lc_old base=' + 'a'.repeat(64) + ' state=attached\n   const ready = session.ready;\n+// Unknown-version note.\n   if (!ready) return null;\n';
+const FOREIGN = '# comment-sidecar v1\n--- app.ts\n+++ app.ts.annotated\n@@ -2,3 +2,4 @@ id=sc_old base=' + 'a'.repeat(64) + ' state=attached\n   const ready = session.ready;\n+// Unknown-version note.\n   if (!ready) return null;\n';
 
 test('v2 stores coordinates, fingerprints and comments without copying target or neighbor code', () => {
   const raw = serialize('app.ts', [note()]);
 
   assert.match(raw, /^# comment-sidecar v2\n/);
-  assert.match(raw, /^@@ 3 @@ id=lc_wait/m);
+  assert.match(raw, /^@@ 3 @@ id=sc_wait/m);
   assert.match(raw, /^@anchor sha256 /m);
   assert.match(raw, /^\+\/\/ Wait until restoration finishes\./m);
   for (const line of SOURCE.trimEnd().split('\n')) {
@@ -38,8 +38,18 @@ test('v2 stores coordinates, fingerprints and comments without copying target or
   assert.deepEqual(Object.keys(parsed.anchor).sort(), ['after', 'before', 'context', 'strong', 'target']);
 });
 
+test('new comments get sc_ IDs and lc_ IDs from earlier versions stay valid', () => {
+  assert.match(createNote(SOURCE, 3, 'New.').id, /^sc_[a-f0-9]{12}$/);
+
+  const legacy = createNote(SOURCE, 3, 'Written before 1.1.0.', { id: 'lc_legacy' });
+  const raw = serialize('app.ts', [legacy]);
+  assert.match(raw, /^@@ 3 @@ id=lc_legacy /m);
+  assert.deepEqual(parse(raw).notes[0], legacy);
+  assert.throws(() => serialize('app.ts', [createNote(SOURCE, 3, 'Unknown prefix.', { id: 'xx_note' })]), /Invalid note ID/);
+});
+
 test('v2 round trips multiline bodies, empty body lines, diff-looking text and Unicode', () => {
-  const item = createNote(SOURCE, 3, 'Reason.\n\n@@ not a header\n@anchor not metadata\n+// body\nαβ 日本語 🧪\n', { id: 'lc_body' });
+  const item = createNote(SOURCE, 3, 'Reason.\n\n@@ not a header\n@anchor not metadata\n+// body\nαβ 日本語 🧪\n', { id: 'sc_body' });
 
   assert.deepEqual(v2([item])[0], item);
 
@@ -54,7 +64,7 @@ test('v2 handles empty files, trailing empty lines and duplicate comments at one
     assert.equal(resolveNotes(source, notes)[0].line, line);
   }
 
-  const notes = v2([note(), createNote(SOURCE, 3, 'Second note.', { id: 'lc_second' })]);
+  const notes = v2([note(), createNote(SOURCE, 3, 'Second note.', { id: 'sc_second' })]);
   assert.equal(notes.length, 2);
   assert.equal(resolveNotes(SOURCE, notes).filter(n => n.line === 3).length, 2);
 });
@@ -104,7 +114,7 @@ test('v2 agent rendering never emits anchor fingerprints or metadata blocks', ()
   const output = render(SOURCE, resolveNotes(SOURCE, notes), { start: 2, end: 4 });
 
   assert.match(output, /^3 \|   if \(!ready\) return null;/m);
-  assert.match(output, /@3 \[lc_wait;attached\]/);
+  assert.match(output, /@3 \[sc_wait;attached\]/);
   assert.ok(!output.includes(notes[0].anchor.target));
   assert.ok(!output.includes(notes[0].anchor.context));
   assert.doesNotMatch(output, /@anchor|@@|base=/);
@@ -138,7 +148,7 @@ test('v2 enforces sidecar size, comment length and note count limits', () => {
   const invalid = { ...note(), text: 'x'.repeat(16001) };
   assert.throws(() => serialize('app.ts', [invalid]), /Comment/);
   assert.throws(() => serialize('app.ts', Array(1001).fill(note())), /Too many/);
-  const many = Array.from({ length: 1001 }, (_, i) => ({ ...note(), id: `lc_n${i}` }));
+  const many = Array.from({ length: 1001 }, (_, i) => ({ ...note(), id: `sc_n${i}` }));
   const raw = serialize('app.ts', many.slice(0, 1000)) +
     serialize('app.ts', many.slice(1000)).split('\n').slice(3).join('\n');
   assert.throws(() => parse(raw), /Too many/);
@@ -200,7 +210,7 @@ test('createNote returns only the canonical fingerprint shape without copied sou
 
 test('notes with copied source instead of an anchor are rejected', () => {
   const unanchored = {
-    id: 'lc_old',
+    id: 'sc_old',
     base: 'a'.repeat(64),
     state: 'attached',
     line: 3,
@@ -310,10 +320,10 @@ for (const [label, sidecar] of [
     const stale = { expectedSource: sourceHash(SOURCE), expectedSidecar: hash(sidecar) };
     for (const options of [
       { operation: 'add', line: 3, text: 'x', expectedText: '  if (!ready) return null;' },
-      { operation: 'update', id: 'lc_old', text: 'x' },
-      { operation: 'remove', id: 'lc_old' },
-      { operation: 'reanchor', id: 'lc_old', line: 3, expectedText: '  if (!ready) return null;' },
-      { operation: 'review', id: 'lc_old' },
+      { operation: 'update', id: 'sc_old', text: 'x' },
+      { operation: 'remove', id: 'sc_old' },
+      { operation: 'reanchor', id: 'sc_old', line: 3, expectedText: '  if (!ready) return null;' },
+      { operation: 'review', id: 'sc_old' },
       { operation: 'sync' },
     ]) {
       await assert.rejects(() => service.write(root, 'app.ts', { ...options, ...stale }));

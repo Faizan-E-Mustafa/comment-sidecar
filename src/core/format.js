@@ -63,7 +63,7 @@ function parse(raw) {
     if (notes.length >= MAX_NOTES) {
       throw new Error('Too many comments.');
     }
-    const head = /^@@ (\d+) @@ id=(lc_[a-zA-Z0-9_-]{1,64}) base=([a-f0-9]{64}) state=(attached|review|detached)$/.exec(lines[i++]);
+    const head = /^@@ (\d+) @@ id=((?:sc|lc)_[a-zA-Z0-9_-]{1,64}) base=([a-f0-9]{64}) state=(attached|review|detached)$/.exec(lines[i++]);
     if (!head) {
       throw new Error(`Invalid hunk header at sidecar line ${i}.`);
     }

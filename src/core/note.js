@@ -6,7 +6,8 @@ const MAX_NOTES = 1000;
 const MAX_COMMENT_CHARS = 16000;
 const PERSISTED_STATES = ['attached', 'review', 'detached'];
 const HASH = /^[a-f0-9]{64}$/;
-const ID = /^lc_[a-zA-Z0-9_-]{1,64}$/;
+// IDs never change, so lc_ IDs written before 1.1.0 stay valid.
+const ID = /^(?:sc|lc)_[a-zA-Z0-9_-]{1,64}$/;
 
 function assertComment(text) {
   if (typeof text !== 'string' || !text.trim() || text.length > MAX_COMMENT_CHARS || text.includes('\0')) {
@@ -50,7 +51,7 @@ function createNote(source, line, text, options = {}) {
   const lines = linesOf(source);
   assertLine(line, lines.length);
   return {
-    id: options.id || `lc_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
+    id: options.id || `sc_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
     base: options.base || sourceHash(source),
     state: options.state || 'attached',
     line,
