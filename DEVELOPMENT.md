@@ -14,7 +14,7 @@ Python 3 (standard library only) packages the VSIX.
 ```sh
 npm test                 # All tests.
 npm run test:aliases     # All tests again, with the temp directory behind a symlink.
-npm run check            # Syntax-check every JavaScript file.
+npm run check            # Syntax and style checks for every JavaScript file.
 npm run verify           # The three commands above.
 npm run release          # verify, then build and cross-check dist/*.vsix and dist/*-source.zip.
 npm run package          # Build the VSIX only, without tests.
@@ -58,7 +58,7 @@ integration/     Agent instructions and a VS Code MCP config example.
 media/           Syntax highlighting for .comment files; the extension icon and README images.
 examples/        A small annotated file to try the extension on.
 test/            Tests; test/fixtures holds a golden .comment file.
-scripts/         Test runners, packaging, benchmark, cleanup.
+scripts/         Test runners, syntax and style checks, packaging, benchmark, cleanup.
 site/            The website (Astro). Built from the example and the extension's own code.
 dist/, reports/  Generated. Ignored by Git.
 ```
@@ -83,10 +83,11 @@ Each rule has tests. Keep them passing.
 
 ## Code style
 
-- One statement per line. Braced, multi-line `if`, loops and `try`. No nested ternaries.
+- One statement per line. Braced, multi-line `if`, loops and `try`. No nested ternaries. `npm run check` enforces these three.
 - Name real decisions (`findMoves`, `isValidEdit`). Do not add wrappers just to shorten code.
 - Comments explain a non-obvious reason. Do not narrate the code.
 - No new dependencies without a strong reason.
+- `.editorconfig` sets indentation, line endings and the final newline in editors that support it.
 
 ## Tests
 
@@ -100,6 +101,7 @@ Each rule has tests. Keep them passing.
 | `extension.test.js` | Extension code against a **mocked** VS Code API, with a real temp filesystem. |
 | `configuration.test.js` | Settings defaults, version consistency, Explorer nesting defaults. |
 | `performance.test.js` | Fast paths keep exact results; the cleanup script only deletes generated files. |
+| `style.test.js` | The style check: what it accepts and what it flags. |
 
 `npm run test:aliases` repeats everything with `TMPDIR` behind a directory symlink, to catch path-alias bugs. It is not a macOS desktop test.
 

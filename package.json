@@ -44,7 +44,7 @@
   },
   "scripts": {
     "test": "node scripts/test.js",
-    "check": "node scripts/check-syntax.js",
+    "check": "node scripts/check-syntax.js && node scripts/check-style.js",
     "benchmark": "node scripts/benchmark.js",
     "package": "python3 scripts/package-vsix.py",
     "test:aliases": "node scripts/test-aliases.js",
