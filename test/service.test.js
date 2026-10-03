@@ -388,6 +388,9 @@ test('annotations stay neutral and filter to changed lines from a diff', async t
   const unfiltered = await service.annotations(root, undefined);
   assert.equal(unfiltered.comments, 1);
   assert.equal(unfiltered.annotations[0].path, 'app.ts');
+
+  // An empty diff means nothing changed, so nothing is annotated.
+  assert.equal((await service.annotations(root, undefined, { diffText: '' })).comments, 0);
 });
 
 test('annotations CLI accepts a diff file and prints neutral JSON', async t => {
