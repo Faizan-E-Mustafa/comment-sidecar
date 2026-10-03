@@ -1,9 +1,9 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { changedLines, diffPath } = require('../src/core/diff');
+const { changedLines, diffPath, DEFAULT_CONTEXT } = require('../src/core/diff');
 
-test('collects only added lines by default', () => {
+test('collects only added lines with zero context', () => {
   const diff = [
     'diff --git a/a.ts b/a.ts',
     'index 111..222 100644',
@@ -16,7 +16,7 @@ test('collects only added lines by default', () => {
     ' three',
   ].join('\n');
 
-  const changed = changedLines(diff);
+  const changed = changedLines(diff, 0);
   assert.deepEqual([...changed.get('a.ts')], [2]);
 });
 
@@ -32,8 +32,21 @@ test('expands changed lines by a configurable context window', () => {
     ' five',
   ].join('\n');
 
-  assert.deepEqual([...changedLines(diff).get('a.ts')], [2]);
+  assert.deepEqual([...changedLines(diff, 0).get('a.ts')], [2]);
   assert.deepEqual([...changedLines(diff, 2).get('a.ts')], [1, 2, 3, 4]);
+});
+
+test('defaults the context window to the standard 3 lines', () => {
+  const diff = [
+    '--- a/a.ts',
+    '+++ b/a.ts',
+    '@@ -1,2 +1,2 @@',
+    ' one',
+    '+two',
+  ].join('\n');
+
+  assert.equal(DEFAULT_CONTEXT, 3);
+  assert.deepEqual([...changedLines(diff).get('a.ts')], [...changedLines(diff, DEFAULT_CONTEXT).get('a.ts')]);
 });
 
 test('tracks the new line counter across hunks', () => {
@@ -47,7 +60,7 @@ test('tracks the new line counter across hunks', () => {
     ' twelve',
   ].join('\n');
 
-  const changed = changedLines(diff);
+  const changed = changedLines(diff, 0);
   assert.deepEqual([...changed.get('b.ts')], [7]);
 });
 
@@ -61,7 +74,7 @@ test('treats a new file as all-added lines starting at one', () => {
     '+c',
   ].join('\n');
 
-  assert.deepEqual([...changedLines(diff).get('new.ts')], [1, 2, 3]);
+  assert.deepEqual([...changedLines(diff, 0).get('new.ts')], [1, 2, 3]);
 });
 
 test('drops deleted files and removed lines', () => {
@@ -77,7 +90,7 @@ test('drops deleted files and removed lines', () => {
     '+new',
   ].join('\n');
 
-  const changed = changedLines(diff);
+  const changed = changedLines(diff, 0);
   assert.equal(changed.has('gone.ts'), false);
   assert.deepEqual([...changed.get('keep.ts')], [1]);
 });
@@ -95,7 +108,7 @@ test('handles renames under the new path', () => {
     '+added',
   ].join('\n');
 
-  const changed = changedLines(diff);
+  const changed = changedLines(diff, 0);
   assert.equal(changed.has('old.ts'), false);
   assert.deepEqual([...changed.get('new.ts')], [2]);
 });
@@ -108,7 +121,7 @@ test('ignores CRLF line endings and paths with spaces', () => {
     '+changed',
   ].join('\r\n');
 
-  const changed = changedLines(diff);
+  const changed = changedLines(diff, 0);
   assert.deepEqual([...changed.get('my file.ts')], [1]);
 });
 

@@ -25,7 +25,7 @@ All commands accept --root PATH (default: current directory).
 Use --text-file PATH instead of --text for multiline comments.
 read returns revision hashes. Writes require both hashes; source files are never written.
 check exits 1 for comments requiring attention, 2 for invocation errors.
-annotations prints provider-neutral JSON: { path, line, message, level }. With --diff, only comments on changed lines are kept; --context N also keeps comments within N unchanged lines of a change. Source files are never written.
+annotations prints provider-neutral JSON: { path, line, message, level }. With --diff, comments on changed lines are kept; --context N (default 3, the standard) also keeps comments within N unchanged lines of a change. Source files are never written.
 `;
 
 function argumentsOf(argv) {

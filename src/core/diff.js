@@ -26,6 +26,9 @@ function diffPath(line) {
   return text;
 }
 
+// Git and GitHub's diff viewers show this many context lines by default.
+const DEFAULT_CONTEXT = 3;
+
 function record(map, path, line) {
   let set = map.get(path);
   if (!set) {
@@ -54,10 +57,10 @@ function expand(set, context) {
 }
 
 // diffText: a git unified diff. context: how many unchanged lines around each
-// changed line to include, defaulting to 0 (only the changed lines). Returns a
-// Map from repo-relative path to a Set of new-side line numbers in scope.
-// Deleted files and removed lines have no new-side line and are skipped.
-function changedLines(diffText, context = 0) {
+// changed line to include, defaulting to the standard 3. Returns a Map
+// from repo-relative path to a Set of new-side line numbers in scope. Deleted
+// files and removed lines have no new-side line and are skipped.
+function changedLines(diffText, context = DEFAULT_CONTEXT) {
   const map = new Map();
   let path = null;
   let newLine = 0;
@@ -102,4 +105,4 @@ function changedLines(diffText, context = 0) {
   return map;
 }
 
-module.exports = { changedLines, diffPath };
+module.exports = { changedLines, diffPath, DEFAULT_CONTEXT };

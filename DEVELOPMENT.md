@@ -83,7 +83,7 @@ Each rule has tests. Keep them passing.
 - **Comment text is untrusted.** Hovers use plain text with HTML and commands disabled. Agent output labels comments as data.
 - **Settings defaults live in `package.json`.** `settings.js` reads them; do not repeat them in code.
 - **Review annotations are provider-neutral.** `annotationsFor` in `core/annotations.js` emits only `{ path, line, message, level }` where `level` is `info` or `warning`. Platform levels (`notice`, etc.) are mapped in the workflow adaptor, never in the core, CLI, or extension. The core never mentions a hosting platform.
-- **Only changed lines are annotated by default.** `changedLines` in `core/diff.js` records added (`+`) lines; a `context` argument widens that window around each change. The workflow reads the window from the `COMMENT_SIDECAR_CONTEXT` repository variable (default 0).
+- **Only changed lines are annotated by default.** `changedLines` in `core/diff.js` records added (`+`) lines; a `context` argument widens that window around each change (default 3, the standard). The workflow reads the window from the `COMMENT_SIDECAR_CONTEXT` repository variable (default 3).
 - **The CLI makes no network calls.** `sidecar annotations` only reads the workspace and a diff; posting happens in the workflow.
 
 ## Code style

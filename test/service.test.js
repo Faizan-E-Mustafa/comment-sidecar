@@ -415,7 +415,7 @@ test('annotations widen scope to context lines around changes', async t => {
     ' start();',
   ].join('\n');
 
-  assert.equal((await service.annotations(root, undefined, { diffText: diff })).comments, 0);
+  assert.equal((await service.annotations(root, undefined, { diffText: diff, context: 0 })).comments, 0);
   assert.equal((await service.annotations(root, undefined, { diffText: diff, context: 1 })).comments, 1);
 });
 
