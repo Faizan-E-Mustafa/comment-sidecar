@@ -1,6 +1,9 @@
 # comment-sidecar v2
 --- annotations-demo.js
 +++ annotations-demo.js.annotated
+@@ 1 @@ id=sc_1ecaee14576e base=e3750c14283675925f292ea9f150bd451b6248e0e88e891975cc1769765fe114 state=attached
+@anchor sha256 before=0 after=2 strong=1 target=93b23d4da38c65770058690087294789ca46878ca510628ea665695bada1a81f context=01c53fc3f6fcd93eb8de27ef58273367ab62e76fb4067ca2c9a0a913823c1803
++// New comment on line 1: checking open or closed.
 @@ 2 @@ id=sc_a0e6ed4cd0cb base=e3750c14283675925f292ea9f150bd451b6248e0e88e891975cc1769765fe114 state=attached
 @anchor sha256 before=1 after=1 strong=1 target=2c3ac7d6a2d1ccd470860a9f47d4f578c55dede7a39735d705eef1b0214edb44 context=01c53fc3f6fcd93eb8de27ef58273367ab62e76fb4067ca2c9a0a913823c1803
 +// Attached note: this line should render as a notice.
