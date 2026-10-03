@@ -1,0 +1,6 @@
+# comment-sidecar v2
+--- annotations-test.js
++++ annotations-test.js.annotated
+@@ 1 @@ id=sc_02eb5ee37b2c base=ffa528b11ef1989e51fec4494068222e13e6ce7b557734e46c504fba60667ff1 state=attached
+@anchor sha256 before=0 after=2 strong=1 target=20e7217b108e637a83961b02b4ececf590465ad1d2eda03218279ad2375f04c5 context=0d5383456ffb69536c454a8e064a7167007f4c6c7ee6da284bf30b35dcd62b93
++// Consider validating PORT is numeric.
