@@ -1,0 +1,6 @@
+# comment-sidecar v2
+--- ctx-test.js
++++ ctx-test.js.annotated
+@@ 1 @@ id=sc_cc6f87c9cc50 base=305582be187c2ae8958e3dd5de6dad33ca0dbf6d9a84ba0cad36ddc7c2503bbd state=attached
+@anchor sha256 before=0 after=2 strong=1 target=cefd0dd07bfa670f7e0b825b372e76a33017fb39beaae3a4db0a742196bb99df context=850d8624b7064f634fc1692bd03d708713e391ca537d53efd52fdd813762a0bd
++// Line 1 has a review note.
