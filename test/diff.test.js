@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { changedLines, diffPath } = require('../src/core/diff');
 
-test('collects added and context lines per new-side file', () => {
+test('collects only added lines by default', () => {
   const diff = [
     'diff --git a/a.ts b/a.ts',
     'index 111..222 100644',
@@ -17,7 +17,23 @@ test('collects added and context lines per new-side file', () => {
   ].join('\n');
 
   const changed = changedLines(diff);
-  assert.deepEqual([...changed.get('a.ts')], [1, 2, 3]);
+  assert.deepEqual([...changed.get('a.ts')], [2]);
+});
+
+test('expands changed lines by a configurable context window', () => {
+  const diff = [
+    '--- a/a.ts',
+    '+++ b/a.ts',
+    '@@ -1,5 +1,5 @@',
+    ' one',
+    '+two',
+    ' three',
+    ' four',
+    ' five',
+  ].join('\n');
+
+  assert.deepEqual([...changedLines(diff).get('a.ts')], [2]);
+  assert.deepEqual([...changedLines(diff, 2).get('a.ts')], [1, 2, 3, 4]);
 });
 
 test('tracks the new line counter across hunks', () => {
@@ -32,7 +48,7 @@ test('tracks the new line counter across hunks', () => {
   ].join('\n');
 
   const changed = changedLines(diff);
-  assert.deepEqual([...changed.get('b.ts')], [6, 7, 12]);
+  assert.deepEqual([...changed.get('b.ts')], [7]);
 });
 
 test('treats a new file as all-added lines starting at one', () => {
@@ -81,7 +97,7 @@ test('handles renames under the new path', () => {
 
   const changed = changedLines(diff);
   assert.equal(changed.has('old.ts'), false);
-  assert.deepEqual([...changed.get('new.ts')], [1, 2]);
+  assert.deepEqual([...changed.get('new.ts')], [2]);
 });
 
 test('ignores CRLF line endings and paths with spaces', () => {

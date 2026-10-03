@@ -393,6 +393,32 @@ test('annotations stay neutral and filter to changed lines from a diff', async t
   assert.equal((await service.annotations(root, undefined, { diffText: '' })).comments, 0);
 });
 
+test('annotations widen scope to context lines around changes', async t => {
+  const root = await fixture(t);
+  const snapshot = await service.load(root, 'app.ts');
+  await service.write(root, 'app.ts', {
+    operation: 'add',
+    line: 1,
+    text: 'Top-level note.',
+    expectedText: 'const ready = false;',
+    ...revisions(snapshot),
+  });
+
+  // Line 2 changes; line 1 is only context. A comment on line 1 is kept
+  // only when the context window reaches it.
+  const diff = [
+    '--- a/app.ts',
+    '+++ b/app.ts',
+    '@@ -1,2 +1,2 @@',
+    ' const ready = false;',
+    '+if (!ready) awaitReady();',
+    ' start();',
+  ].join('\n');
+
+  assert.equal((await service.annotations(root, undefined, { diffText: diff })).comments, 0);
+  assert.equal((await service.annotations(root, undefined, { diffText: diff, context: 1 })).comments, 1);
+});
+
 test('annotations CLI accepts a diff file and prints neutral JSON', async t => {
   const root = await fixture(t);
   await add(root);

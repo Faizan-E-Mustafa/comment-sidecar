@@ -36,10 +36,28 @@ function record(map, path, line) {
   set.add(line);
 }
 
-// diffText: a git unified diff. Returns a Map from repo-relative path to a Set
-// of new-side line numbers present in the diff. Deleted files and removed
-// lines have no new-side line and are skipped.
-function changedLines(diffText) {
+// Expand a set of changed lines to include the surrounding context window.
+// Lines are 1-based, so the lower edge never goes below 1.
+function expand(set, context) {
+  if (context <= 0) {
+    return set;
+  }
+
+  const out = new Set();
+  for (const line of set) {
+    for (let n = Math.max(1, line - context); n <= line + context; n++) {
+      out.add(n);
+    }
+  }
+
+  return out;
+}
+
+// diffText: a git unified diff. context: how many unchanged lines around each
+// changed line to include, defaulting to 0 (only the changed lines). Returns a
+// Map from repo-relative path to a Set of new-side line numbers in scope.
+// Deleted files and removed lines have no new-side line and are skipped.
+function changedLines(diffText, context = 0) {
   const map = new Map();
   let path = null;
   let newLine = 0;
@@ -72,9 +90,13 @@ function changedLines(diffText) {
       record(map, path, newLine);
       newLine += 1;
     } else if (line.startsWith(' ')) {
-      record(map, path, newLine);
+      // Context lines occupy a new-side slot but are not themselves changed.
       newLine += 1;
     }
+  }
+
+  for (const file of map.keys()) {
+    map.set(file, expand(map.get(file), context));
   }
 
   return map;
