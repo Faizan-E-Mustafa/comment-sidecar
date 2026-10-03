@@ -187,7 +187,7 @@ async function annotations(root, file, options = {}) {
   const sources = file
     ? [(await resolveSource(root, file)).sourcePath]
     : (await findSidecars(root)).map(sourceOf);
-  const changed = options.diffText ? changedLines(options.diffText) : null;
+  const changed = options.diffText === undefined ? null : changedLines(options.diffText);
   const found = [];
 
   for (const target of sources) {

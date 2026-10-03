@@ -1,0 +1,9 @@
+# comment-sidecar v2
+--- annotations-demo.js
++++ annotations-demo.js.annotated
+@@ 2 @@ id=sc_a0e6ed4cd0cb base=e3750c14283675925f292ea9f150bd451b6248e0e88e891975cc1769765fe114 state=attached
+@anchor sha256 before=1 after=1 strong=1 target=2c3ac7d6a2d1ccd470860a9f47d4f578c55dede7a39735d705eef1b0214edb44 context=01c53fc3f6fcd93eb8de27ef58273367ab62e76fb4067ca2c9a0a913823c1803
++// Attached note: this line should render as a notice.
+@@ 3 @@ id=sc_4726354bcbd0 base=e3750c14283675925f292ea9f150bd451b6248e0e88e891975cc1769765fe114 state=review
+@anchor sha256 before=2 after=0 strong=1 target=13a8d0beb4f6662bd61bd189e0000465fe0c848ee5dd090bae85b8860bd44f87 context=01c53fc3f6fcd93eb8de27ef58273367ab62e76fb4067ca2c9a0a913823c1803
++// Review note: this line should render as a warning.
